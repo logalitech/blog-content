@@ -1,0 +1,59 @@
+---
+title: "CDS bien estructuradas: la capa VDM que no te avergüenza en tres años"
+description: "Basic, Composite, Consumption. El Virtual Data Model no es burocracia: es lo que separa un modelo que escala de un plato de espaguetis. Con ejemplo de código ABAP CDS real."
+pubDate: 2026-07-08
+updatedDate: 2026-07-09
+author: "Logali Tech"
+tags: ["ABAP", "CDS", "VDM", "S/4HANA"]
+draft: false
+lang: "es"
+translationKey: "cds-bien-estructuradas"
+---
+
+La mayoría de los problemas de rendimiento y de mantenimiento en CDS no vienen del SQL. Vienen de **no haber decidido, antes de escribir la primera vista, qué papel juega cada vista en el modelo**. El Virtual Data Model (VDM) de SAP resuelve exactamente eso.
+
+## Las tres capas del VDM
+
+- **Basic (interface)**: exponen una tabla o un objeto de negocio 1:1, sin lógica. Nombradas `I_...`. Son tu única puerta a los datos crudos.
+- **Composite (interface)**: combinan varias Basic (joins, asociaciones, agregaciones reutilizables). También `I_...`.
+- **Consumption**: la capa que consume una app, una OData o un informe. Nombradas `C_...`. Aquí van las anotaciones de UI, los `@Search`, los value helps.
+
+La regla de oro: **una Consumption nunca lee tablas directamente**; lee Basic o Composite. Así, cuando cambia el modelo físico, solo tocas la capa Basic.
+
+## Un ejemplo concreto
+
+Una vista Basic sobre las cabeceras de pedido, tipada y con asociaciones explícitas:
+
+```abap
+@AbapCatalog.viewEnhancementCategory: [#NONE]
+@AccessControl.authorizationCheck: #CHECK
+@EndUserText.label: 'Cabecera de pedido de venta'
+@Metadata.ignorePropagatedAnnotations: true
+define view entity I_SalesOrderHeader
+  as select from vbak
+  association [0..*] to I_SalesOrderItem as _Item
+    on $projection.SalesOrder = _Item.SalesOrder
+{
+  key vbeln           as SalesOrder,
+      erdat           as CreationDate,
+      @Semantics.amount.currencyCode: 'Currency'
+      netwr           as NetAmount,
+      waerk           as Currency,
+      // exposición de la asociación para el navegador de datos
+      _Item
+}
+```
+
+Fíjate en tres decisiones que valen oro dentro de tres años:
+
+1. `@Semantics.amount.currencyCode` liga el importe a su moneda: cualquier consumidor sabe formatearlo sin adivinar.
+2. La asociación `_Item` se declara pero **no** se materializa en un join: se resuelve solo cuando alguien navega.
+3. El nombre `I_SalesOrderHeader` grita "soy interface, reutilízame", no "soy la vista de esa pantalla concreta".
+
+## El error que verás en todos los proyectos
+
+Una Consumption con quince joins, tres subselects y anotaciones de UI mezcladas con lógica de negocio. Funciona el día de la demo y es imposible de tocar el día del cambio. Si tu vista `C_...` tiene un `select from` a una tabla transparente, ya has roto el VDM.
+
+> Estructurar en capas cuesta media hora más hoy. No estructurar cuesta la vida del proyecto en cada evolución.
+
+En el próximo post: cómo las asociaciones sustituyen a los joins y por qué eso cambia el plan de ejecución en HANA.

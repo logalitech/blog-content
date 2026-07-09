@@ -1,0 +1,32 @@
+---
+title: "Released APIs: consumir el estándar sin acoplarte a lo que no debes"
+description: "Consumir una API liberada de SAP está bien; consumirla mal te acopla al core igual que una modificación. La diferencia está en el patrón de acceso. Guía práctica en ABAP Cloud."
+pubDate: 2026-07-09
+author: "Logali Tech"
+tags: ["ABAP", "Clean Core", "RAP", "S/4HANA"]
+draft: false
+lang: "es"
+translationKey: "released-apis-consumir"
+---
+
+Este post existe solo en español por ahora — es el ejemplo vivo de que en el blog la **traducción no es bloqueante**: publicamos cuando el contenido está listo, no cuando están las dos lenguas. Si abres el conmutador de idioma arriba, te llevará al índice en inglés en lugar de a un 404.
+
+## El malentendido habitual
+
+"Uso released APIs, luego soy Clean Core." No necesariamente. Puedes consumir una API liberada de forma que te acople al estándar tanto como una `Z`-modificación. El sello de liberación garantiza que **la firma** de la API no cambia; no garantiza que tu forma de usarla sea sana.
+
+## Tres patrones que sí escalan
+
+- **Envuelve, no dependas**: nunca llames a la released API directamente desde tu lógica de negocio. Interponla tras una interfaz propia. El día que SAP la sustituya, cambias una clase, no cincuenta llamadas.
+- **Consume datos por CDS liberada, no por tablas**: aunque conozcas la tabla subyacente, la released CDS es el contrato. La tabla no lo es.
+- **Trata los errores como parte del contrato**: si la API devuelve un `EntityMessage`, mapéalo a tu dominio. No dejes que el mensaje técnico de SAP se filtre a tu UI.
+
+## Señales de que te has acoplado de más
+
+1. Tu código se rompe al aplicar un feature pack aunque la firma no cambió → dependes de un comportamiento no contractual.
+2. Tienes `SELECT` a tablas que también expones por una released CDS → duplicas la fuente de verdad.
+3. Cambiar de la released API a otra exige tocar más de un fichero → falta la capa de envoltura.
+
+> Liberado significa "SAP no romperá esta firma". No significa "puedes olvidarte del desacoplamiento". Ese trabajo sigue siendo tuyo.
+
+La versión en inglés de este artículo llegará en una próxima iteración. Mientras tanto, el resto del blog ya está disponible en ambos idiomas.

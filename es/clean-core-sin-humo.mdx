@@ -1,0 +1,42 @@
+---
+title: "Clean Core sin humo: qué significa de verdad en ABAP Cloud"
+description: "Clean Core no es una etiqueta de marketing ni prohibir modificaciones. Es una disciplina de extensibilidad basada en APIs liberadas y puntos de extensión estables. Lo desmontamos con ejemplos."
+pubDate: 2026-07-07
+author: "Logali Tech"
+tags: ["ABAP", "Clean Core", "S/4HANA", "BTP"]
+draft: false
+lang: "es"
+translationKey: "clean-core-sin-humo"
+---
+
+Cada vez que sale un proyecto S/4HANA, alguien pronuncia las palabras mágicas: **Clean Core**. Y casi siempre significan cosas distintas para cada persona en la sala. Vamos a fijar el concepto sin adornos.
+
+## Qué NO es Clean Core
+
+Clean Core **no** es "prohibido tocar SAP". Tampoco es "todo a la BTP". Y desde luego no es una casilla que marcas en una diapositiva de gobierno.
+
+Clean Core es una consecuencia técnica de una decisión de arquitectura: **extender el sistema únicamente a través de interfaces que SAP se compromete a mantener estables entre releases**. Eso es todo. Lo demás son corolarios.
+
+## Las tres capas del contrato
+
+Cuando SAP "libera" (`released`) un objeto, te está dando un contrato de estabilidad. Hay tres niveles que importan en el día a día:
+
+- **C1 — Use system-internally**: puedes usarlo dentro del propio stack ABAP.
+- **C0 — Use as remote API**: estable incluso para consumo externo (OData, RFC liberado).
+- **No liberado**: si lo usas, estás fuera del contrato y una nota de SAP puede romperte el código sin aviso.
+
+La pregunta correcta en cada desarrollo no es "¿puedo llamar a esto?" sino "**¿está liberado para el uso que le voy a dar?**".
+
+## El coste real de saltarse el contrato
+
+El argumento de negocio es simple: un desarrollo que respeta Clean Core sobrevive a los upgrades **sin retrabajo**. Uno que no, entra en la cola de regresión cada vez que SAP toca el core. Multiplica eso por cinco años de mantenimiento y verás por qué el CFO acaba entendiendo la arquitectura mejor que el arquitecto.
+
+> Clean Core no encarece el proyecto. Lo que encarece el proyecto es descubrir, en el upgrade, todo lo que no era Clean Core.
+
+## Por dónde empezar mañana
+
+1. Activa el **ABAP Cloud** development model en tus paquetes nuevos: el checker te avisa al instante si tocas algo no liberado.
+2. Antes de copiar un objeto estándar, busca su **released API** equivalente. Casi siempre existe.
+3. Cuando no exista, ese es tu caso legítimo para un **key user extension** o un desarrollo en BTP — documentado como excepción, no como norma.
+
+En los próximos posts entramos en el detalle: CDS bien estructuradas, patrones de extensión con BAdIs liberados, y cómo consumir released APIs sin acoplarte a lo que no debes.

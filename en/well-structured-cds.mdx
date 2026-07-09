@@ -1,0 +1,59 @@
+---
+title: "Well-structured CDS: the VDM layer that won't embarrass you in three years"
+description: "Basic, Composite, Consumption. The Virtual Data Model isn't bureaucracy: it's what separates a model that scales from a plate of spaghetti. With a real ABAP CDS code example."
+pubDate: 2026-07-08
+updatedDate: 2026-07-09
+author: "Logali Tech"
+tags: ["ABAP", "CDS", "VDM", "S/4HANA"]
+draft: false
+lang: "en"
+translationKey: "cds-bien-estructuradas"
+---
+
+Most performance and maintenance problems in CDS don't come from the SQL. They come from **not deciding, before writing the first view, what role each view plays in the model**. SAP's Virtual Data Model (VDM) solves exactly that.
+
+## The three VDM layers
+
+- **Basic (interface)**: expose a table or business object 1:1, with no logic. Named `I_...`. They are your only gateway to raw data.
+- **Composite (interface)**: combine several Basic views (joins, associations, reusable aggregations). Also `I_...`.
+- **Consumption**: the layer an app, an OData service or a report consumes. Named `C_...`. UI annotations, `@Search`, value helps live here.
+
+The golden rule: **a Consumption view never reads tables directly**; it reads Basic or Composite. That way, when the physical model changes, you only touch the Basic layer.
+
+## A concrete example
+
+A Basic view over sales order headers, typed and with explicit associations:
+
+```abap
+@AbapCatalog.viewEnhancementCategory: [#NONE]
+@AccessControl.authorizationCheck: #CHECK
+@EndUserText.label: 'Sales order header'
+@Metadata.ignorePropagatedAnnotations: true
+define view entity I_SalesOrderHeader
+  as select from vbak
+  association [0..*] to I_SalesOrderItem as _Item
+    on $projection.SalesOrder = _Item.SalesOrder
+{
+  key vbeln           as SalesOrder,
+      erdat           as CreationDate,
+      @Semantics.amount.currencyCode: 'Currency'
+      netwr           as NetAmount,
+      waerk           as Currency,
+      // expose the association for the data navigator
+      _Item
+}
+```
+
+Notice three decisions that pay off three years down the line:
+
+1. `@Semantics.amount.currencyCode` binds the amount to its currency: any consumer knows how to format it without guessing.
+2. The `_Item` association is declared but **not** materialized as a join: it resolves only when someone navigates it.
+3. The name `I_SalesOrderHeader` shouts "I'm an interface, reuse me", not "I'm the view for that one screen".
+
+## The mistake you'll see in every project
+
+A Consumption view with fifteen joins, three subselects and UI annotations tangled with business logic. It works on demo day and is impossible to touch on change day. If your `C_...` view has a `select from` a transparent table, you've already broken the VDM.
+
+> Layering costs you half an hour more today. Not layering costs the project's life on every evolution.
+
+Next post: how associations replace joins and why that changes the execution plan in HANA.

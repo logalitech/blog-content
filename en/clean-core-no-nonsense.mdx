@@ -1,0 +1,42 @@
+---
+title: "Clean Core, no nonsense: what it actually means in ABAP Cloud"
+description: "Clean Core is not a marketing label, nor a ban on modifications. It's an extensibility discipline built on released APIs and stable extension points. We break it down with examples."
+pubDate: 2026-07-07
+author: "Logali Tech"
+tags: ["ABAP", "Clean Core", "S/4HANA", "BTP"]
+draft: false
+lang: "en"
+translationKey: "clean-core-sin-humo"
+---
+
+Every time an S/4HANA project kicks off, someone utters the magic words: **Clean Core**. And it almost always means something different to each person in the room. Let's pin the concept down, no frills.
+
+## What Clean Core is NOT
+
+Clean Core is **not** "you can't touch SAP". It's not "everything to BTP" either. And it's certainly not a checkbox you tick on a governance slide.
+
+Clean Core is the technical consequence of an architectural decision: **extend the system only through interfaces SAP commits to keeping stable across releases**. That's it. Everything else is a corollary.
+
+## The three layers of the contract
+
+When SAP `released` an object, it's giving you a stability contract. Three levels matter day to day:
+
+- **C1 — Use system-internally**: usable within the ABAP stack itself.
+- **C0 — Use as remote API**: stable even for external consumption (OData, released RFC).
+- **Not released**: if you use it, you're outside the contract and an SAP note can break your code without warning.
+
+The right question in every development isn't "can I call this?" but "**is it released for the use I'm about to make of it?**".
+
+## The real cost of skipping the contract
+
+The business case is simple: a development that respects Clean Core survives upgrades **with no rework**. One that doesn't joins the regression queue every time SAP touches the core. Multiply that by five years of maintenance and you'll see why the CFO ends up understanding the architecture better than the architect.
+
+> Clean Core doesn't make the project more expensive. What makes it expensive is discovering, during the upgrade, everything that wasn't Clean Core.
+
+## Where to start tomorrow
+
+1. Enable the **ABAP Cloud** development model in your new packages: the checker warns you instantly if you touch something unreleased.
+2. Before copying a standard object, look for its equivalent **released API**. It almost always exists.
+3. When it doesn't, that's your legitimate case for a **key user extension** or a BTP development — documented as an exception, not a norm.
+
+In upcoming posts we go into detail: well-structured CDS, extension patterns with released BAdIs, and how to consume released APIs without coupling to what you shouldn't.
