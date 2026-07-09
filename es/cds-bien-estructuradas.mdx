@@ -22,9 +22,9 @@ La regla de oro: **una Consumption nunca lee tablas directamente**; lee Basic o 
 
 ```mermaid
 flowchart TD
-  T[("Tablas / HANA")] --> B["Basic I_*<br/>1:1, sin lógica"]
-  B --> C["Composite I_*<br/>joins y agregaciones"]
-  B --> K["Consumption C_*<br/>anotaciones UI, @Search"]
+  T[(Tablas / HANA)] --> B["Basic I_* — 1:1, sin lógica"]
+  B --> C["Composite I_* — joins y agregaciones"]
+  B --> K["Consumption C_* — anotaciones UI"]
   C --> K
   K --> A["App Fiori · OData · Informe"]
 ```
