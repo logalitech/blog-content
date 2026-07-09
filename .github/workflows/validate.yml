@@ -1,0 +1,37 @@
+name: Validate content
+
+# Puerta de calidad del contenido: en cada PR construye el sitio real con el
+# contenido propuesto. Si un post rompe el build (frontmatter inválido, MDX mal
+# formado, Mermaid roto…), el check sale en ROJO y no se puede mergear → nunca
+# llega a producción. Corre en runner de GitHub (no toca el servidor).
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout web-frontend (código del sitio)
+        uses: actions/checkout@v4
+        with:
+          repository: logalitech/web-frontend
+          token: ${{ secrets.BLOG_CONTENT_TOKEN }}
+          path: site
+
+      - name: Checkout blog-content (este PR) dentro del sitio
+        uses: actions/checkout@v4
+        with:
+          path: site/src/content/blog
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install + build (valida el contenido)
+        working-directory: site
+        run: |
+          npm ci
+          npm run build
+          echo "### ✅ El contenido construye correctamente" >> "$GITHUB_STEP_SUMMARY"
