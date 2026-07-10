@@ -7,8 +7,16 @@ import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const LANGS = ['es', 'en'];
-const REQUIRED = ['title', 'description', 'pubDate', 'lang', 'translationKey'];
+const REQUIRED = ['title', 'description', 'pubDate', 'lang', 'translationKey', 'category'];
 const errors = [];
+
+// Lista maestra de categorías (misma fuente que consume la web).
+let CATEGORIES = [];
+try {
+  CATEGORIES = JSON.parse(await readFile('categories.json', 'utf8'));
+} catch {
+  errors.push('No se pudo leer categories.json (lista de categorías).');
+}
 
 async function mdxFiles(dir) {
   let out = [];
@@ -54,6 +62,8 @@ for (const file of files) {
     errors.push(`${file}: lang="${fm.lang}" no coincide con la carpeta "${folderLang}/"`);
   if (fm.pubDate && Number.isNaN(Date.parse(fm.pubDate)))
     errors.push(`${file}: pubDate="${fm.pubDate}" no es una fecha válida (usa YYYY-MM-DD)`);
+  if (fm.category && CATEGORIES.length && !CATEGORIES.includes(fm.category))
+    errors.push(`${file}: category="${fm.category}" no está en categories.json`);
 }
 
 if (errors.length) {
