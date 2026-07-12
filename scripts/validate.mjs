@@ -66,8 +66,22 @@ for (const file of files) {
     errors.push(`${file}: category="${fm.category}" no está en categories.json`);
 }
 
+// Landings de campaña (landings/ → /lp/<slug>/). Esquema propio, mucho más
+// laxo que el blog: solo exigimos lo que rompería la página o la analítica.
+const landingFiles = await mdxFiles('landings');
+for (const file of landingFiles) {
+  const raw = await readFile(file, 'utf8');
+  const fm = parseFrontmatter(raw, file);
+  if (!fm) continue;
+  for (const key of ['title', 'description']) {
+    if (!(key in fm) || fm[key] === '') errors.push(`${file}: falta el campo obligatorio "${key}"`);
+  }
+  if (fm.utmCampaign && !/^[0-9]{6}-[a-z0-9-]+$/.test(fm.utmCampaign))
+    errors.push(`${file}: utmCampaign="${fm.utmCampaign}" no sigue el formato AAAAMM-nombre`);
+}
+
 if (errors.length) {
   console.error('❌ Validación de contenido fallida:\n' + errors.map((e) => '  · ' + e).join('\n'));
   process.exit(1);
 }
-console.log(`✅ ${files.length} post(s) validados correctamente.`);
+console.log(`✅ ${files.length} post(s) y ${landingFiles.length} landing(s) validados correctamente.`);
