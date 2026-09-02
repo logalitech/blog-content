@@ -5,7 +5,7 @@ pubDate: 2026-09-02
 author: "Logali Tech"
 tags: ["ABAP", "ABAP Cloud", "Carrera", "ABAP SQL"]
 category: "ABAP Cloud"
-draft: true
+draft: false
 lang: "es"
 translationKey: "abap-cloud-no-es-cobol"
 ---
@@ -25,7 +25,7 @@ El problema es que ese código tiene veinte años y el lenguaje no se quedó ah�
 Esto es una expresión constructora y una reducción funcional. Sin tablas temporales, sin bucles con acumulador, sin declaraciones al principio del programa:
 
 ```abap
-METHOD altos_consumidores.
+METHOD if_oo_adt_classrun~main.
   DATA(clientes) = VALUE ty_clientes(
       FOR pedido IN pedidos
       WHERE ( importe > umbral )
