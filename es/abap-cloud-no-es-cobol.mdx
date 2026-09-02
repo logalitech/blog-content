@@ -1,0 +1,82 @@
+---
+title: "ABAP Cloud no es Cobol: para desarrolladores que vienen de fuera"
+description: "Si vienes de Java, Python o JavaScript y crees que ABAP es un lenguaje del pasado, aquí tienes el código que se escribe hoy en un proyecto S/4HANA y lo que significa para tu carrera."
+pubDate: 2026-09-02
+author: "Logali Tech"
+tags: ["ABAP", "ABAP Cloud", "Carrera", "ABAP SQL"]
+category: "ABAP Cloud"
+draft: true
+lang: "es"
+translationKey: "abap-cloud-no-es-cobol"
+---
+
+Mucha gente descarta ABAP sin haber visto una línea de ABAP moderno. Vamos a mirar el código que se escribe de verdad en un proyecto S/4HANA actual, y qué significa eso para tu carrera.
+
+## El mito, y de dónde viene
+
+Si eres desarrollador y vienes de Java, de Python o de JavaScript, lo más probable es que hayas oído hablar de ABAP en pasado. Un lenguaje de los años noventa, verboso, atado a un sistema propietario, con una sintaxis que parece Cobol con acento alemán. Algo que se mantiene, no algo que se aprende.
+
+El mito tiene una base real. El ABAP que se escribía en 2005 sí se parecía a eso. Tablas internas con `OCCURS`, cabeceras de tabla implícitas, `MOVE-CORRESPONDING` a ciegas, lógica de negocio de tres mil líneas en un único report. Quien vio ese código y salió corriendo tenía razón.
+
+El problema es que ese código tiene veinte años y el lenguaje no se quedó ahí.
+
+## Qué es hoy ABAP Cloud, con código delante
+
+Esto es una expresión constructora y una reducción funcional. Sin tablas temporales, sin bucles con acumulador, sin declaraciones al principio del programa:
+
+```abap
+METHOD altos_consumidores.
+  DATA(clientes) = VALUE ty_clientes(
+      FOR pedido IN pedidos
+      WHERE ( importe > umbral )
+      ( id      = pedido-cliente_id
+        nombre  = pedido-cliente_nombre
+        importe = pedido-importe ) ).
+
+  DATA(total) = REDUCE decfloat34(
+      INIT suma = CONV decfloat34( 0 )
+      FOR cliente IN clientes
+      NEXT suma = suma + cliente-importe ).
+
+  out->write( |{ lines( clientes ) } clientes suman { total } EUR| ).
+ENDMETHOD.
+```
+
+Si vienes de fuera, reconoces el patrón: es una comprensión de lista y un `reduce`. La declaración en línea, la plantilla de cadena con `|{ }|`, el método que escribe en consola porque la clase implementa `if_oo_adt_classrun`. Nada de esto existía en el ABAP del mito.
+
+Y la parte de datos se parece todavía más a lo que ya sabes:
+
+```abap
+SELECT FROM zi_pedido
+  FIELDS cliente_id, SUM( importe ) AS total
+  WHERE fecha >= @desde
+  GROUP BY cliente_id
+  HAVING SUM( importe ) > @umbral
+  ORDER BY total DESCENDING
+  INTO TABLE @DATA(ranking)
+  UP TO 20 ROWS.
+```
+
+Eso es SQL. SQL de verdad, ejecutado en la base de datos HANA en lugar de traer un millón de registros al servidor de aplicaciones para filtrarlos con un `LOOP`. El cambio de mentalidad que pide ABAP Cloud no es sintáctico, es este: **el cálculo baja al dato, no al contrario.**
+
+Añade a eso que se programa desde Visual Studio Code o desde Eclipse con ADT, que el código vive en Git a través de abapGit, y que hay un checker que te avisa en el momento si usas un objeto que SAP no se compromete a mantener estable. La distancia con el resto de la industria es mucho menor de lo que parece desde fuera.
+
+> ABAP no compite con Java por elegancia. Compite por dónde está el dinero de las empresas, y ese dato no ha cambiado.
+
+## Por qué el mercado paga por esto
+
+Aquí está el argumento que casi nadie te cuenta. Hay decenas de miles de empresas grandes cuyos procesos críticos, facturación, nómina, logística, cadena de suministro, corren sobre SAP. Todas ellas están migrando a S/4HANA con fecha límite. Y el ABAP que hay dentro se escribió, en buena parte, con el estilo de 2005.
+
+Eso crea una demanda muy concreta: gente que sepa escribir extensiones limpias sobre APIs liberadas, en lugar de modificar el estándar. Es un perfil escaso, porque exige dos cosas que rara vez van juntas. Mentalidad de desarrollador moderno, que tú ya traes de fuera, y conocimiento del contrato de estabilidad de SAP, que es lo único que te falta.
+
+Dicho de otra forma: no compites con quien lleva veinte años haciendo reports. Compites en un hueco donde esa experiencia no ayuda, y donde tu forma de pensar sí.
+
+## Por dónde empezar mañana
+
+1. Pide una cuenta de prueba gratuita de **SAP BTP ABAP Environment**. Tienes un sistema real, sin instalar nada.
+2. Instala **ADT** en Eclipse, o la extensión de ABAP en Visual Studio Code. Verás que el ciclo de trabajo se parece bastante al que ya conoces.
+3. Escribe tu primera clase con `if_oo_adt_classrun` y ejecútala. Es el equivalente a un `main`, y te quita de encima toda la ceremonia de los reports clásicos.
+4. Activa el modelo de desarrollo **ABAP Cloud** en tus paquetes nuevos desde el primer día. El checker te enseña el contrato de estabilidad mientras programas, que es la forma más rápida de interiorizarlo.
+5. Aprende ABAP SQL antes que la sintaxis de objetos. Es donde está la diferencia de rendimiento y donde tu experiencia previa con bases de datos vale más.
+
+En los próximos artículos entramos en el detalle de cada paso: cómo se estructura una CDS view entity, qué es RAP y por qué sustituye a la programación de pantallas, y cómo consumir APIs liberadas sin acoplarte a lo que no debes.
