@@ -1,0 +1,49 @@
+---
+title: "¿Por qué tu CDS view está mal estructurada?"
+description: "Cómo estructurar una CDS view en capas Basic, Composite y Consumption, y por qué mezclarlas rompe tus apps Fiori y tus informes."
+pubDate: 2026-09-07
+author: "Logali Tech"
+tags: ["ABAP", "ABAP Cloud", "ABAP CDS", "CDS views"]
+category: "ABAP CDS"
+draft: true
+lang: "es"
+translationKey: "cds-view-mal-estructurada"
+---
+
+Una CDS view puede compilar, devolver datos correctos y aun así estar mal estructurada. El problema no se ve el primer día. Se ve tres meses después, cuando la segunda app Fiori que la consume necesita un dato distinto, o cuando el informe que la usa tarda cuatro segundos en cargar y nadie sabe por qué.
+
+## El error común: tratar la CDS view como si fuera una vista de base de datos
+
+La CDS view no es una vista de SQL con anotaciones encima. Es una capa de un modelo, y ese modelo tiene tres niveles con responsabilidades distintas: Basic, Composite y Consumption. El error más frecuente es aplastar los tres en una sola vista.
+
+Así se ve en la práctica:
+
+```abap
+@AbapCatalog.sqlViewName: 'ZSALESODATA'
+@OData.publish: true
+define view ZI_SalesKitchenSink
+  as select from vbak as header
+    inner join vbap as item
+      on header.vbeln = item.vbeln
+    left outer join kna1 as customer
+      on header.kunnr = customer.kunnr
+{
+  key header.vbeln,
+      item.posnr,
+      customer.name1,
+
+      sum( item.netwr ) as total_neto
+}
+group by
+  header.vbeln,
+  item.posnr,
+  customer.name1
+```
+
+Funciona. También es tres cosas a la vez. Lee de una tabla base como haría una vista Basic. Hace joins como una vista Composite. Y agrega datos y se expone directo por OData como una vista Consumption, con `@OData.publish: true` en la misma definición.
+
+El coste no aparece en este view. Aparece en el siguiente. La app Fiori que necesita las líneas de pedido sin agregar no puede reutilizar nada de aquí: la agregación viene incluida, no es opcional. El informe que necesita agrupar por otro campo tiene que reescribir el join desde cero, porque no existe una capa intermedia de la que partir. Y cualquier cambio en cómo se relacionan `vbak` y `vbap` obliga a tocar la única vista que existe, con el riesgo de romper todo lo que ya la consume, incluida la parte de agregación que nada tiene que ver con el cambio.
+
+Eso es lo que significa en la práctica que "Fiori y los informes de analítica se construyen sobre CDS": no consumen datos, consumen tu modelo. Si el modelo es una vista, el modelo eres tú, reescribiéndolo cada vez que algo nuevo lo necesita.
+
+*(Continúa: cómo separar esto en tres capas con un ejemplo completo, y la checklist para revisar una CDS view existente.)*
