@@ -46,4 +46,85 @@ El coste no aparece en este view. Aparece en el siguiente. La app Fiori que nece
 
 Eso es lo que significa en la práctica que "Fiori y los informes de analítica se construyen sobre CDS": no consumen datos, consumen tu modelo. Si el modelo es una vista, el modelo eres tú, reescribiéndolo cada vez que algo nuevo lo necesita.
 
-*(Continúa: cómo separar esto en tres capas con un ejemplo completo, y la checklist para revisar una CDS view existente.)*
+## La corrección: tres vistas donde había una
+
+Separar no significa escribir más código. Significa escribir cada trozo una sola vez, en el sitio donde se puede reutilizar.
+
+La capa **Basic** ya está hecha en cualquier sistema S/4HANA moderno: `I_SalesOrderHeader`, `I_SalesOrderItem`, `I_Customer`. Son vistas 1:1 sobre la tabla, sin lógica, y son tu única puerta a los datos crudos. Si estás escribiendo un `select from vbak`, casi siempre es porque no has buscado la Basic que ya existe. Las reglas de nomenclatura y el porqué de cada capa los desarrollamos en [CDS bien estructuradas: la capa VDM que no te avergüenza en tres años](/blog/cds-bien-estructuradas/).
+
+La capa **Composite** es donde vive el join, y solo el join:
+
+```abap
+@AccessControl.authorizationCheck: #CHECK
+@EndUserText.label: 'Posiciones de pedido con cliente'
+@Metadata.ignorePropagatedAnnotations: true
+define view entity I_SalesOrderItemWithCustomer
+  as select from I_SalesOrderItem as item
+    inner join I_SalesOrderHeader as header
+      on item.SalesOrder = header.SalesOrder
+    left outer join I_Customer as customer
+      on header.Customer = customer.Customer
+{
+  key item.SalesOrder,
+  key item.SalesOrderItem,
+      header.CreationDate,
+      header.Customer,
+      customer.CustomerName,
+
+      @Semantics.amount.currencyCode: 'Currency'
+      item.NetAmount,
+      item.Currency
+}
+```
+
+Sin agregación, sin anotaciones de UI, sin exposición. Devuelve el grano más fino que tiene sentido en este dominio, la línea de pedido con su cliente resuelto. Cualquiera puede partir de aquí.
+
+La capa **Consumption** es la única que sabe para qué pantalla o para qué informe se está construyendo, y por eso es la única que agrega y la única que lleva anotaciones:
+
+```abap
+@AccessControl.authorizationCheck: #CHECK
+@EndUserText.label: 'Total neto por cliente'
+@UI.headerInfo: { typeName: 'Cliente', typeNamePlural: 'Clientes' }
+define view entity C_SalesTotalsByCustomer
+  as select from I_SalesOrderItemWithCustomer
+{
+      @UI.lineItem: [{ position: 10 }]
+  key Customer,
+
+      @UI.lineItem: [{ position: 20 }]
+      CustomerName,
+
+      @UI.lineItem: [{ position: 30 }]
+      @Semantics.amount.currencyCode: 'Currency'
+      sum( NetAmount ) as TotalNetAmount,
+
+      Currency
+}
+group by
+  Customer,
+  CustomerName,
+  Currency
+```
+
+Ahora vuelve a los tres costes del principio y mira qué pasa con cada uno.
+
+La app Fiori que necesitaba las líneas sin agregar consume `I_SalesOrderItemWithCustomer` y ya está, sin tocar nada de lo existente. El informe que agrupaba por otro campo escribe su propia Consumption de diez líneas sobre la misma Composite, en lugar de reescribir el join. Y si mañana cambia la relación entre cabecera y posición, se toca la Composite, un sitio, y todos los consumidores siguen funcionando porque el contrato que ven, los nombres de los campos, no ha cambiado.
+
+Fíjate también en lo que ha desaparecido: el `@OData.publish: true`. En ABAP Cloud la exposición no se declara dentro de la vista, se hace fuera, con una service definition que dice qué entidades se publican y un service binding que dice con qué protocolo. Esa separación es la misma idea aplicada un nivel más arriba: la vista describe el dato, no decide quién la consume.
+
+> Una CDS view que sabe a la vez de dónde vienen los datos, cómo se relacionan y para qué pantalla son, tiene tres razones para cambiar. Las tres te van a llegar.
+
+## Checklist para revisar una CDS view que ya existe
+
+Recórrela con la vista delante. Cada "sí" es deuda técnica localizada, no una catástrofe, pero conviene saber que está ahí.
+
+1. ¿Hace `select from` a una tabla transparente (`vbak`, `mara`, `bkpf`) en lugar de a una vista `I_...`? Si es así, se ha saltado la capa Basic.
+2. ¿Tiene anotaciones de UI (`@UI.*`) y al mismo tiempo joins o agregaciones? Entonces es Consumption y Composite en el mismo fichero.
+3. ¿Lleva `sum`, `count` o un `group by` que no todos sus consumidores necesitan? La agregación obligatoria es la forma más común de bloquear la reutilización.
+4. ¿Se expone con `@OData.publish` desde dentro? En un desarrollo nuevo eso va en una service definition, no en la vista.
+5. ¿Su nombre describe una pantalla o un informe concreto (`ZV_INFORME_VENTAS_DIRECCION`) en lugar de un objeto de negocio? El nombre suele delatar la capa antes que el código.
+6. ¿Los importes llevan `@Semantics.amount.currencyCode` y las cantidades su unidad? Si no, cada consumidor tiene que adivinar cómo formatear, y adivinará distinto.
+
+Si has marcado el 1 y el 2, no reescribas nada todavía. Extrae primero la Composite, deja la vista original apuntando a ella y comprueba que los consumidores actuales siguen dando el mismo resultado. La refactorización de un modelo se hace por debajo, sin romper el contrato de arriba.
+
+En el próximo artículo entramos en el paso siguiente, cuándo una asociación sustituye a un join y qué le hace eso al plan de ejecución en HANA, tema que ya tocamos en [asociaciones frente a joins](/blog/cds-asociaciones-vs-joins/).
