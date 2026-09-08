@@ -5,7 +5,7 @@ pubDate: 2026-09-07
 author: "Logali Tech"
 tags: ["ABAP", "ABAP Cloud", "ABAP CDS", "CDS views"]
 category: "ABAP CDS"
-draft: true
+draft: false
 lang: "es"
 translationKey: "cds-view-mal-estructurada"
 ---
@@ -126,5 +126,7 @@ Recórrela con la vista delante. Cada "sí" es deuda técnica localizada, no una
 6. ¿Los importes llevan `@Semantics.amount.currencyCode` y las cantidades su unidad? Si no, cada consumidor tiene que adivinar cómo formatear, y adivinará distinto.
 
 Si has marcado el 1 y el 2, no reescribas nada todavía. Extrae primero la Composite, deja la vista original apuntando a ella y comprueba que los consumidores actuales siguen dando el mismo resultado. La refactorización de un modelo se hace por debajo, sin romper el contrato de arriba.
+
+Si quieres practicar esto de principio a fin, el curso [SAP ABAP Cloud CDS: Core Data Services](/courses/sap-abap-cloud-cds-core-data-services) trabaja las tres capas con ejercicios guiados, y el libro [ABAP Cloud: Modelado de Datos con CDS](/books/abap-cds) las lleva desde la primera entidad hasta el Universal Journal.
 
 En el próximo artículo entramos en el paso siguiente, cuándo una asociación sustituye a un join y qué le hace eso al plan de ejecución en HANA, tema que ya tocamos en [asociaciones frente a joins](/blog/cds-asociaciones-vs-joins/).
