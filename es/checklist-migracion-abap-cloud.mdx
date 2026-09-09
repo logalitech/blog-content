@@ -1,0 +1,53 @@
+---
+title: "De ABAP procedural a ABAP Cloud: checklist de migración"
+description: "Migrar a ABAP Cloud no es traducir sintaxis: cambia el acceso a datos, la lógica de negocio y cómo se modela con RAP. Checklist paso a paso, con ejemplos reales."
+pubDate: 2026-09-09
+author: "Logali Tech"
+tags: ["ABAP", "ABAP Cloud", "ABAP RAP", "Migración"]
+category: "ABAP Cloud"
+draft: false
+lang: "es"
+translationKey: "checklist-migracion-abap-cloud"
+---
+
+La primera vez que alguien me pregunta cómo migrar a ABAP Cloud desde ABAP procedural, la respuesta corta decepciona: no se migra código, se migra la forma de pensar el código. Puedes traducir una rutina de ABAP clásico línea por línea y seguir teniendo, al final, ABAP clásico con sintaxis nueva.
+
+Este checklist no es una lista de sintaxis nueva que aprender. Es el orden en que de verdad cambian las cosas cuando un equipo mueve un desarrollo real de ABAP procedural a ABAP Cloud, con un ejemplo concreto en cada paso.
+
+## 1. El acceso a datos cambia primero
+
+Antes de tocar una sola línea de lógica de negocio, cambia cómo se lee la base de datos. ABAP SQL sustituye a Open SQL clásico y a las llamadas directas a tablas transparentes. Un `SELECT` que antes vivía suelto en cualquier rutina ahora vive detrás de una CDS view, con autorización y semántica de negocio ya incorporadas. Ya escribimos sobre [cómo estructurar bien esa capa](/blog/cds-view-mal-estructurada/): aquí nos importa que exista, no todavía cómo se organiza por dentro.
+
+Ejemplo real: una rutina que hacía `SELECT SINGLE * FROM vbak WHERE vbeln = ...` se convierte en una consulta contra una CDS view que ya expone el pedido de venta con sus asociaciones, no la tabla cruda.
+
+## 2. De procedimientos a Objects
+
+Los `FORM` y los módulos de función dejan de ser el lugar donde vive la lógica. Cada pieza de negocio se modela como una clase con una interfaz clara. No es un cambio cosmético: cambia cómo se prueba (unit tests reales, no solo ejecución manual) y cómo se reutiliza el código entre desarrollos. Si esta parte es la que más te cuesta, el libro [ABAP Cloud: Programación Orientada a Objetos](/books/abap-oo) recorre clases, interfaces, herencia y pruebas con ABAP Unit desde cero.
+
+## 3. RAP sustituye a dynpro para la lógica transaccional
+
+En ABAP procedural, la lógica transaccional (crear, validar, guardar un pedido) solía vivir repartida entre un dynpro, sus módulos `PAI`/`PBO` y un grupo de funciones. En ABAP Cloud, esa misma lógica se modela en un Business Object RAP: una definición clara de las operaciones permitidas (`create`, `update`, `delete`), las validaciones y las determinaciones en un solo lugar, consumible tanto por Fiori como por API sin escribir esa lógica dos veces.
+
+Ejemplo real: un pedido de venta que antes se creaba y validaba dentro de un módulo `PAI`, disperso entre tres o cuatro includes, pasa a un BO RAP con una sola determinación de "calcular importe total" y una sola validación de "cliente bloqueado", reutilizables desde cualquier consumidor. El curso [SAP ABAP RAP: Arquitectura Cloud](/courses/sap-abap-rap-arquitectura-cloud) construye este mismo tipo de Business Object paso a paso.
+
+## 4. Lo que hay que desaprender
+
+- Llamar directamente a una tabla transparente desde cualquier punto del código, en vez de pasar por una CDS view.
+- Meter lógica de negocio dentro de la capa de pantalla (módulos `PAI`/`PBO`).
+- Pensar en "el programa" como unidad, en vez de en "el objeto de negocio" como unidad.
+- Depender de memoria global (`EXPORT`/`IMPORT` a memoria, parámetros `SPA`/`GPA`) para pasar datos entre pantallas.
+
+## Checklist de migración a ABAP Cloud, paso a paso
+
+1. Identifica el objeto de negocio real detrás del programa (pedido, factura, artículo), no la pantalla.
+2. Mapea el acceso a datos actual y sustitúyelo por CDS views con asociaciones, no por `SELECT` directos.
+3. Extrae la lógica de negocio a una clase o a un BO RAP, separada de cualquier capa de presentación.
+4. Sustituye memoria global por parámetros explícitos en la interfaz de la clase u objeto.
+5. Escribe al menos un unit test por operación antes de dar la migración por terminada.
+6. Verifica que el mismo objeto de negocio se pueda consumir tanto desde Fiori como desde una API, sin duplicar lógica.
+
+## Por dónde empezar el lunes
+
+No migres el programa más grande primero. Elige uno pequeño, autocontenido, con pocas dependencias, y recorre este checklist completo de principio a fin una vez. El objetivo de la primera migración no es velocidad, es aprender dónde están los puntos de fricción reales en tu propio sistema antes de tocar algo crítico.
+
+Si quieres partir de una base sólida antes de tocar tu primer objeto real, [ABAP Cloud no es Cobol](/blog/abap-cloud-no-es-cobol/) explica por dónde empezar si vienes de fuera del ecosistema SAP.
