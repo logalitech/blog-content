@@ -5,7 +5,7 @@ pubDate: 2026-09-11
 author: "Logali Tech"
 tags: ["ABAP Cloud", "Carrera", "RAP"]
 category: "ABAP Cloud"
-draft: true
+draft: false
 lang: "es"
 translationKey: "consultor-funcional-abap-cloud"
 ---
@@ -35,3 +35,27 @@ No necesitas el detalle de sintaxis. Necesitas cuatro ideas, y con ellas ya pued
 **Las APIs liberadas.** SAP publica un catálogo de APIs que se garantiza que van a seguir funcionando después de cada actualización. Cuando el equipo técnico dice "vamos por la API liberada", está eligiendo el camino estable. Cuando dice que no hay API liberada para algo, esa carencia es un dato real de riesgo del proyecto, no una excusa, y es exactamente el tipo de cosa que debería llegar al comité de decisión con esas palabras.
 
 Con estas cuatro ideas ya puedes hacer la pregunta que de verdad importa en una reunión de estimación: "¿esto se apoya en una extensión sobre una API liberada, o estamos tocando el núcleo?". Esa sola pregunta separa una estimación seria de una que nadie ha verificado todavía.
+
+Si quieres bajar estas cuatro ideas a algo más estructurado que una conversación, el curso [S/4HANA Cloud: Modelo de extensibilidad Clean Core](/courses/s-4hana-cloud-modelo-de-extensibilidad-clean-core/) está pensado exactamente para este perfil: no enseña a programar, enseña a razonar el modelo de extensibilidad desde el rol de quien decide el alcance, no de quien escribe el código.
+
+## Un ejemplo real: la especificación que costó tres semanas de retrabajo
+
+En un proyecto de retail que acompañamos, la especificación funcional pedía algo aparentemente simple: cuando se creaba un pedido de venta, el sistema debía calcular automáticamente un recargo si el cliente pertenecía a una categoría concreta, y escribir ese recargo directamente en la tabla del pedido antes de que continuara el proceso estándar. El equipo técnico lo estimó, lo construyó modificando el user exit correspondiente, y pasó las pruebas de aceptación sin problema.
+
+Tres semanas después de la actualización trimestral del sistema, el recargo dejó de aplicarse en el quince por ciento de los pedidos, sin ningún error visible en pantalla. El user exit modificado dependía de un campo interno que SAP había reordenado en esa actualización, uno de los muchos detalles que un objeto no liberado no promete mantener estable. Nadie lo detectó hasta que finanzas revisó los márgenes del trimestre.
+
+El arreglo correcto no era volver a parchear el user exit. Era modelar el recargo como una determinación dentro de un Business Object RAP para el pedido, apoyada en una API liberada para leer la categoría del cliente. Eso, construido desde el principio, habría costado prácticamente lo mismo que la primera versión. Reconstruido después del incidente, con la presión de finanzas encima, costó tres semanas y una revisión completa de otros cinco desarrollos con el mismo patrón.
+
+La diferencia entre las dos versiones no estaba en el presupuesto ni en el equipo técnico. Estaba en si alguien, en la reunión de especificación, había preguntado si ese acceso directo a la tabla del pedido estaba liberado para ese uso.
+
+## Cómo esto te ayuda a defender al cliente
+
+Aquí es donde el criterio técnico deja de ser cultura general y se convierte en tu herramienta de trabajo. Un consultor funcional que entiende estas cuatro ideas puede hacer tres cosas que uno que no las entiende no puede.
+
+Puede **filtrar una estimación antes de que llegue al cliente**. Si una estimación de tres sprints se apoya en tocar un objeto no liberado, esa cifra no es solo alta, es frágil: sobrevivirá a la implementación pero no al primer upgrade. Señalarlo en la revisión interna, antes de comprometerlo con el cliente, es defender tanto el presupuesto como la relación.
+
+Puede **explicar un "no" sin perder autoridad**. Cuando el cliente pide algo que rompe Clean Core, la respuesta "no se puede" suena a excusa. La respuesta "se puede, pero no así, porque esto pondría en riesgo la próxima actualización de tu sistema, y aquí está la alternativa que sí lo respeta" es la misma negativa, convertida en criterio profesional que el cliente puede entender y aceptar.
+
+Y puede **anticipar el riesgo real de un desarrollo antes de que se construya**, no después de que se rompa. Volviendo al ejemplo anterior, esa pregunta, hecha a tiempo, no cuesta nada. Hecha después del incidente, cuesta tres semanas y la confianza del cliente en el criterio técnico de todo el equipo, funcional incluido.
+
+Ninguna de estas tres cosas requiere que sepas escribir ABAP. Requiere que sepas hacer la pregunta correcta antes de que sea demasiado tarde para hacerla. Y si quieres profundizar en el porqué detrás de esta disciplina, no solo en el qué, el libro [S/4HANA: Extensibilidad con Clean Core](/books/clean-core) recorre el mismo terreno desde el key user hasta el developer, verificado en un sistema real.
