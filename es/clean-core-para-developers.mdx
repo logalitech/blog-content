@@ -1,0 +1,25 @@
+---
+title: "Clean Core para developers: extender S/4HANA sin romper el core"
+description: "Modificar el standard no es gratis: se paga en cada upgrade. Una guía práctica, desde el punto de vista del developer, de cómo elegir el camino de extensión correcto antes de escribir la primera línea."
+pubDate: 2026-09-15
+author: "Logali Tech"
+tags: ["ABAP", "Clean Core", "S/4HANA", "RAP", "Extensibilidad"]
+category: "ABAP Cloud"
+draft: true
+lang: "es"
+translationKey: "clean-core-para-developers"
+---
+
+Ya escribimos sobre [qué es Clean Core en realidad](/blog/clean-core-sin-humo/) y sobre [los tres niveles de extensibilidad](/blog/abap-cloud-tres-niveles-extensibilidad/) que ofrece S/4HANA. Este post no repite ese terreno. Va de lo que pasa cuando, como developer, ya sabes todo eso y aun así tienes la tentación (o la presión de un consultor funcional con prisa) de tocar un objeto que no deberías tocar.
+
+## El coste no aparece hoy, aparece en el próximo upgrade
+
+El argumento de negocio de Clean Core (menos retrabajo en cinco años de mantenimiento) ya está hecho en el post anterior. Aquí interesa el coste que sí ves tú, developer, de forma directa: el que aparece la próxima vez que SAP libera una nota o un upgrade toca el core.
+
+Un ejemplo real, sin dramatizar. Un cliente tenía un recargo por volumen calculado en un user exit clásico, no liberado, enganchado a la determinación de precios estándar. Funcionaba perfecto. Hasta el upgrade trimestral que reorganizó internamente ese punto de enganche. El user exit no desapareció de la documentación (porque nunca estuvo documentado como estable), simplemente dejó de dispararse en el orden esperado. Resultado: tres semanas de retrabajo para diagnosticar algo que no debería haber sido un incidente, solo una línea en un release note que nadie tenía por qué leer.
+
+Ese es el patrón. No es que el upgrade "rompa cosas" al azar. Es que todo lo que vive fuera del contrato liberado nunca tuvo garantía de sobrevivir, y el coste de esa falta de garantía no se paga cuando escribes el código, se paga meses después, con otro equipo, otro contexto, y la presión de un cliente que ve un bug donde tú ves una consecuencia esperada.
+
+## Antes de programar: en qué nivel vive tu extensión
+
+Ya vimos el mapa completo de los tres niveles en el post anterior. Para un developer, en la práctica, la decisión real casi siempre se reduce a una pregunta más estrecha: ¿esto vive en **Developer Extensibility on stack** (RAP, CDS liberadas, BAdIs liberados, todo dentro de ABAP Cloud) o tiene que salir a **side by side** en BTP?
