@@ -5,7 +5,7 @@ pubDate: 2026-09-15
 author: "Logali Tech"
 tags: ["ABAP", "Clean Core", "S/4HANA", "RAP", "Extensibilidad"]
 category: "ABAP Cloud"
-draft: true
+draft: false
 lang: "es"
 translationKey: "clean-core-para-developers"
 ---
@@ -23,3 +23,19 @@ Ese es el patrón. No es que el upgrade "rompa cosas" al azar. Es que todo lo qu
 ## Antes de programar: en qué nivel vive tu extensión
 
 Ya vimos el mapa completo de los tres niveles en el post anterior. Para un developer, en la práctica, la decisión real casi siempre se reduce a una pregunta más estrecha: ¿esto vive en **Developer Extensibility on stack** (RAP, CDS liberadas, BAdIs liberados, todo dentro de ABAP Cloud) o tiene que salir a **side by side** en BTP?
+
+La respuesta casi siempre es que sí vive on stack, y ahí es donde entra la disciplina real. Tres herramientas cubren la mayoría de los casos:
+
+- **RAP (RESTful Application Programming Model)** para objetos de negocio nuevos: si necesitas una entidad propia, con su propio ciclo de vida, acciones y validaciones, RAP te da un objeto de negocio completo, versionado y compatible con upgrades, en vez de un programa suelto que nadie recuerda por qué existe.
+- **CDS views liberadas** para modelar datos sin tocar las tablas estándar. La clave está en la palabra "liberadas": una CDS view interna, no publicada como API, tiene la misma garantía de estabilidad que un user exit clásico, es decir, ninguna.
+- **BAdIs liberados** para engancharte a un punto de extensión que SAP sí garantiza mantener. La lista de BAdIs liberados por app está documentada, no es un secreto ni algo que se descubra por prueba y error en producción.
+
+El patrón que conecta las tres herramientas con el ejemplo del principio es siempre el mismo: la pregunta no es "¿funciona?", es "¿está liberado?". Un BAdI liberado sigue el mismo contrato de compatibilidad que una API pública. Un user exit clásico, por bien que funcione hoy, nunca tuvo ese contrato, y por eso puede desaparecer sin aviso en cualquier upgrade.
+
+## La pregunta que hubiera evitado las tres semanas de retrabajo
+
+Antes de escribir la primera línea, la pregunta que hubiera evitado el incidente del principio es simple: ¿este punto de enganche aparece en la lista de extensiones liberadas para esta app estándar? Si la respuesta es no, la extensión es técnicamente posible pero contractualmente huérfana, y el coste real se paga en el próximo upgrade, no hoy, cuando ya nadie se acuerda de por qué se hizo así.
+
+Esa pregunta, hecha a tiempo, cuesta cinco minutos de revisar la documentación de extensibilidad de la app. No hacerla cuesta tres semanas de retrabajo, como en el ejemplo del principio, repartidas entre alguien que ya no está en el proyecto y otro equipo que hereda un bug que en realidad nunca fue un bug.
+
+Si quieres el mapa completo de qué se libera y qué no, y cómo se construyen extensiones reales sobre una app estándar en vez de quedarte solo con la documentación oficial, el curso [S/4HANA Cloud: Modelo de extensibilidad Clean Core](/courses/s-4hana-cloud-modelo-de-extensibilidad-clean-core/) y el libro [S/4HANA: Extensibilidad con Clean Core](/books/clean-core) cubren las tres capas (in-app, developer extensibility con RAP, y side-by-side en BTP) con extensiones construidas y activadas sobre una aplicación estándar real, no solo teoría.
