@@ -1,0 +1,55 @@
+---
+title: "¿Cuándo contratar consultoría SAP BTP externa (y cuándo no)?"
+description: "Consultoría SAP BTP: cuándo conviene traer ayuda externa senior, qué preguntar antes de firmar, y cuándo el problema se resuelve mejor por dentro."
+pubDate: 2026-09-16
+author: "Logali Tech"
+tags: ["SAP BTP", "Consultoría", "CIO"]
+category: "BAIP Administration"
+draft: true
+lang: "es"
+translationKey: "cuando-contratar-consultoria-sap-btp-externa"
+---
+
+Cada CIO que gestiona SAP BTP llega, tarde o temprano, al mismo cruce: un proyecto se ha estancado, el equipo interno no ha tocado nunca ese servicio concreto de la plataforma, y alguien en el comité pregunta si hace falta traer consultoría externa. La pregunta que de verdad importa no es "¿necesitamos ayuda?" — casi siempre la respuesta es sí, en algún punto. La pregunta es cuándo, para qué exactamente, y durante cuánto tiempo, porque contratar consultoría SAP BTP demasiado pronto cuesta presupuesto que no hacía falta gastar, y contratarla demasiado tarde cuesta un proyecto parado o, peor, uno que sigue avanzando sobre una base mal construida.
+
+## El marco de decisión: tres preguntas antes de firmar nada
+
+Antes de pedir propuestas, conviene responder tres preguntas internamente. No son preguntas técnicas, son preguntas de alcance y de tiempo.
+
+**¿Es un problema de capacidad o de conocimiento?** Si el equipo interno sabe cómo hacerlo pero no tiene horas, la solución es más horas (internas o subcontratadas de ejecución), no necesariamente consultoría senior. Si el equipo no ha operado nunca ese servicio concreto de BTP en producción — Integration Suite bajo carga real, FinOps de consumo, una migración de Cloud Foundry a Kyma — el problema es de conocimiento, y ahí sí hace falta criterio senior, no solo manos.
+
+**¿Es una decisión que se toma una vez, o una que se repite?** Una migración puntual, una arquitectura de integración que se diseña una sola vez, un plan de gobernanza de consumo que se define y luego se ejecuta internamente: eso es candidato natural a un contrato acotado con un partner externo. Si en cambio es una competencia que el equipo va a necesitar todos los meses — dar soporte a integraciones nuevas, ajustar el consumo cada trimestre — la pregunta real no es a quién contratar, es a quién contratar y en paralelo formar, porque pagar consultoría externa de forma indefinida para algo recurrente sale más caro que construir la competencia adentro.
+
+**¿Qué pasa si esto sale mal?** No toda decisión BTP pesa igual. Una automatización interna que falla se repara. Una arquitectura de FinOps mal diseñada, o una integración mal planteada entre S/4HANA y un sistema financiero externo, puede costar meses de retrabajo o, peor, quedar mal calculada durante un año entero de facturación de consumo antes de que alguien la revise. Cuanto más caro es el error y más difícil de revertir, menos margen hay para aprender sobre la marcha con el equipo interno, y más sentido tiene pagar por criterio ya probado.
+
+Estas tres preguntas no sustituyen un análisis caso por caso, pero descartan rápido el error más común: pagar por [consultoría SAP BTP](/consulting/) genérica para un problema que en realidad es de capacidad, o intentar resolver con horas internas un problema que en realidad exige criterio nunca probado en producción.
+
+## Las señales reales de que necesitas ayuda externa senior
+
+Más allá del marco general, hay señales concretas que, en la práctica, indican que vale la pena traer un partner externo especializado en SAP BTP:
+
+**El proyecto toca finanzas o cumplimiento, y nadie en el equipo lo ha certificado nunca en producción.** Una integración de Integration Suite mal configurada que mueve datos financieros incorrectos, o un flujo de aprobación mal diseñado en Workflow que salta un control de cumplimiento, no se descubre en pruebas — se descubre en auditoría, meses después. Cuando el radio de error toca finanzas o cumplimiento regulatorio, la experiencia previa deja de ser un lujo.
+
+**El consumo de BTP ya sorprendió a alguien en la factura, más de una vez.** El modelo de precios por consumo de BTP es fácil de subestimar en el diseño y caro de corregir después de construido. Si ya hubo una sorpresa de facturación este año, es una señal de que falta criterio de FinOps específico de la plataforma, no solo disciplina de monitoreo.
+
+{/*
+TODO — completar antes de publicar (Día 13, `17.md`). Outline del resto:
+
+1. Terminar "Las señales reales..." con 2-3 señales más, en el mismo estilo concreto
+   (ejemplos candidatos: una migración puntual sin curva de aprendizaje que valga la pena
+   para el equipo interno; una arquitectura greenfield sin ningún precedente interno en BTP;
+   un plazo regulatorio fijo que no admite la curva de aprendizaje del equipo propio).
+2. Nueva sección H2: "Qué preguntarle a un partner antes de firmar" — checklist concreto:
+   experiencia real en producción con los servicios exactos que se van a tocar (no solo
+   "hacemos BTP" genérico), alcance cerrado vs. abierto, transferencia de conocimiento
+   documentada (para no quedar dependientes para siempre), referencias verificables de
+   proyectos de tamaño/sector comparable.
+3. Nueva sección H2: "Cuándo NO conviene contratar consultoría externa" — cumplir la
+   promesa del título ("y cuándo no"), honesto: casos donde un curso o libro interno basta
+   porque el problema es acotado y no recurrente. Enlazar aquí a
+   /courses/s-4hana-cloud-modelo-de-extensibilidad-clean-core/ y /books/clean-core como
+   alternativa de bajo costo cuando aplica — no antes, para no diluir el pilar.
+4. Cierre breve con CTA final claro hacia /consulting/ (ya enlazado una vez en el marco de
+   decisión; el cierre puede apuntar a un caso concreto de /consulting/casos/ si encaja,
+   ver lista de slugs de casos en el reporte de investigación de esta sesión).
+*/}
