@@ -1,11 +1,11 @@
 ---
 title: "¿Cuándo contratar consultoría SAP BTP externa (y cuándo no)?"
 description: "Consultoría SAP BTP: cuándo conviene traer ayuda externa senior, qué preguntar antes de firmar, y cuándo el problema se resuelve mejor por dentro."
-pubDate: 2026-09-16
+pubDate: 2026-09-17
 author: "Logali Tech"
 tags: ["SAP BTP", "Consultoría", "CIO"]
 category: "BAIP Administration"
-draft: true
+draft: false
 lang: "es"
 translationKey: "cuando-contratar-consultoria-sap-btp-externa"
 ---
@@ -32,24 +32,27 @@ Más allá del marco general, hay señales concretas que, en la práctica, indic
 
 **El consumo de BTP ya sorprendió a alguien en la factura, más de una vez.** El modelo de precios por consumo de BTP es fácil de subestimar en el diseño y caro de corregir después de construido. Si ya hubo una sorpresa de facturación este año, es una señal de que falta criterio de FinOps específico de la plataforma, no solo disciplina de monitoreo.
 
-{/*
-TODO — completar antes de publicar (Día 13, `17.md`). Outline del resto:
+**Es una migración puntual que no se va a repetir en dos o tres años.** Mover Cloud Foundry a Kyma, o consolidar subcuentas antes de una reorganización, es trabajo que se hace una vez y no vuelve a hacer falta. Construir esa competencia adentro para usarla una sola vez no amortiza; contratarla para ese proyecto concreto, con alcance cerrado, sí.
 
-1. Terminar "Las señales reales..." con 2-3 señales más, en el mismo estilo concreto
-   (ejemplos candidatos: una migración puntual sin curva de aprendizaje que valga la pena
-   para el equipo interno; una arquitectura greenfield sin ningún precedente interno en BTP;
-   un plazo regulatorio fijo que no admite la curva de aprendizaje del equipo propio).
-2. Nueva sección H2: "Qué preguntarle a un partner antes de firmar" — checklist concreto:
-   experiencia real en producción con los servicios exactos que se van a tocar (no solo
-   "hacemos BTP" genérico), alcance cerrado vs. abierto, transferencia de conocimiento
-   documentada (para no quedar dependientes para siempre), referencias verificables de
-   proyectos de tamaño/sector comparable.
-3. Nueva sección H2: "Cuándo NO conviene contratar consultoría externa" — cumplir la
-   promesa del título ("y cuándo no"), honesto: casos donde un curso o libro interno basta
-   porque el problema es acotado y no recurrente. Enlazar aquí a
-   /courses/s-4hana-cloud-modelo-de-extensibilidad-clean-core/ y /books/clean-core como
-   alternativa de bajo costo cuando aplica — no antes, para no diluir el pilar.
-4. Cierre breve con CTA final claro hacia /consulting/ (ya enlazado una vez en el marco de
-   decisión; el cierre puede apuntar a un caso concreto de /consulting/casos/ si encaja,
-   ver lista de slugs de casos en el reporte de investigación de esta sesión).
-*/}
+**El proyecto es greenfield y no hay ningún precedente interno en esa parte de BTP.** La primera integración real sobre Integration Suite, o la primera app CAP que sale a producción, no tiene contra qué compararse dentro de la casa. Sin un caso interno previo de referencia, cada decisión de diseño se toma sobre supuestos, no sobre experiencia, y ahí un partner que ya lo ha visto fallar en otro cliente vale más que cualquier documentación oficial.
+
+**Hay una fecha límite regulatoria o contractual fija.** Cuando el plazo no lo pone el equipo sino un auditor o un cliente, no hay margen para que alguien aprenda BTP sobre la marcha en ese proyecto concreto. La curva de aprendizaje del equipo interno es una inversión legítima, pero no en el mismo proyecto que tiene una fecha que no se puede mover.
+
+## Qué preguntarle a un partner antes de firmar
+
+Antes de firmar cualquier propuesta, hay cuatro preguntas que separan un partner senior de uno que solo dice "hacemos BTP":
+
+- **Experiencia real en producción con los servicios exactos que vas a tocar.** No "hacemos BTP" en general, sino ese servicio concreto — Integration Suite bajo carga real, FinOps de consumo, una migración de Cloud Foundry a Kyma — con proyectos que se puedan nombrar, aunque sea de forma anonimizada.
+- **Alcance cerrado, no abierto.** Un contrato que define qué termina el proyecto y cuándo, no una bolsa de horas que se puede estirar indefinidamente. El alcance abierto es la señal más común de que el partner no tiene claro el problema, o prefiere no tenerlo claro.
+- **Transferencia de conocimiento documentada, no informal.** Que la documentación y el criterio de diseño queden en la casa, por escrito, como entregable — no solo en la cabeza del consultor que se va al terminar el contrato. Sin esto, la consultoría puntual se convierte en dependencia permanente.
+- **Referencias verificables de proyectos de tamaño y sector comparable.** No un logotipo en una slide, sino un contacto real al que se pueda llamar y que haya vivido un proyecto de escala parecida, en un sector con las mismas restricciones (regulación, volumen, criticidad).
+
+## Cuándo NO conviene contratar consultoría externa
+
+Para cumplir la pregunta del título hasta el final: no todo caso justifica traer un partner. Si el problema es acotado, no se va a repetir el mes que viene, y el radio de error es bajo — una extensión Clean Core puntual, un primer contacto con el modelo de extensibilidad de S/4HANA Cloud, una duda de arquitectura que no compromete nada en producción todavía — la alternativa de bajo costo suele ser suficiente: el curso [S/4HANA Cloud: Modelo de extensibilidad Clean Core](/courses/s-4hana-cloud-modelo-de-extensibilidad-clean-core/) o el libro [S/4HANA: Extensibilidad con Clean Core](/books/clean-core) cubren ese terreno con criterio aplicado, no solo teoría, y cuestan una fracción de un contrato de consultoría.
+
+La diferencia con las señales de la sección anterior no es el tema (BTP en ambos casos), es el radio de error y la recurrencia. Formar al equipo tiene sentido cuando el problema se va a repetir y el coste de un error inicial es bajo. Contratar tiene sentido cuando no se va a repetir, o cuando un error sale caro de deshacer. Confundir los dos casos es la forma más común de gastar de más o de gastar de menos.
+
+## La decisión, en una frase
+
+Contratar consultoría SAP BTP externa no es una apuesta de todo o nada: es un cálculo concreto entre lo que cuesta el error si algo sale mal y lo que cuesta formar al equipo para que no vuelva a pasar. Cuando ese cálculo pesa hacia el error caro y no recurrente, conviene hablar con alguien que ya lo haya resuelto antes — [nuestro equipo de consultoría](/consulting/) lo ha hecho, entre otros casos, en un [monitor de consumo y costes de BTP](/consulting/casos/finops-consumo-btp/) para anticipar exactamente el tipo de sorpresa de facturación descrito arriba.
