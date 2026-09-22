@@ -5,7 +5,7 @@ pubDate: 2026-09-21
 author: "Logali Tech"
 tags: ["ABAP", "RAP", "ABAP Cloud", "CDS"]
 category: "ABAP RAP"
-draft: true
+draft: false
 lang: "es"
 translationKey: "rap-primer-objeto-de-negocio"
 ---
@@ -83,10 +83,69 @@ define root view entity ZI_Deal
 
 Dos anotaciones que se pasan por alto en un primer intento y luego cuestan una tarde de depuración: `@ObjectModel.dataCategory: #TRANSACTIONAL` es lo que le dice al framework que esta vista es candidata a business object, y sin los semantics de auditoría (`@Semantics.user.*`, `@Semantics.systemDateTime.*`) mapeados uno a uno con la tabla, la behavior definition del siguiente paso no compila.
 
-<!--
-TODO (continuar mañana, ziua 16):
-- Paso 3: behavior definition managed minima (managed, early numbering, campo etag)
-- Paso 4: service definition + service binding, registro y prueba en el preview OData
-- Cierre: que se ve en el preview (create/read funcionando), y enlace hacia adelante a validaciones/autorizaciones/draft como "siguientes pasos naturales"
-- Revisar que zin_deal_status (elemento de datos) se defina o se sustituya por un tipo existente antes de publicar
--->
+Falta un elemento de datos que la tabla del Paso 1 ya da por hecho: `zin_deal_status`. Se define aparte, como un `abap.char(10)` con valores fijos, antes de activar la tabla:
+
+```cds
+@EndUserText.label: 'Estado de la solicitud'
+@AbapCatalog.enhancement.category: #NOT_EXTENSIBLE
+define type zin_deal_status : abap.char(10);
+```
+
+Para este primer recorrido no hace falta un dominio con valores fijos ni un value help; eso encaja mejor en el post sobre [validaciones y determinaciones](/blog/rap-validaciones-determinaciones), donde ya hay lógica que decide qué estados son válidos.
+
+## Paso 3: la behavior definition managed
+
+Con la tabla y la vista de interfaz activas, el siguiente archivo es la behavior definition. Es lo que convierte una vista CDS en algo con lo que un cliente OData puede hacer create, update y delete.
+
+```abap
+managed implementation in class zbp_i_deal unique;
+strict 2;
+
+define behavior for ZI_Deal alias Deal
+  persistent table zin_deal
+  lock master
+  authorization master ( instance )
+  etag master local_last_changed_at
+{
+  create;
+  update;
+  delete;
+
+  field ( readonly ) DealUUID, LocalCreatedBy, LocalCreatedAt, LocalLastChangedBy, LocalLastChangedAt, LastChangedAt;
+
+  mapping for zin_deal
+  {
+    DealUUID              = deal_uuid;
+    CustomerId             = customer_id;
+    NetAmount               = net_amount;
+    CurrencyCode           = currency_code;
+    Status                 = status;
+    LocalCreatedBy         = local_created_by;
+    LocalCreatedAt         = local_created_at;
+    LocalLastChangedBy     = local_last_changed_by;
+    LocalLastChangedAt     = local_last_changed_at;
+    LastChangedAt          = last_changed_at;
+  }
+}
+```
+
+No hay una sola línea de código ABAP propio aquí todavía; `create`, `update` y `delete` sin cuerpo son la promesa de que el framework se encarga de la persistencia por ti. Eso es exactamente lo que managed quiere decir: tú declaras el contrato, y el guardado, el bloqueo optimista (`etag master`) y la generación del UUID los resuelve RAP. La clase `zbp_i_deal` hay que crearla vacía (con el `unique` ya la pide el compilador), pero no necesita ni una sola línea dentro para que este recorrido funcione.
+
+## Paso 4: service definition, service binding y preview
+
+Lo último que falta es exponer la vista de interfaz como un servicio OData que se pueda probar.
+
+```cds
+@EndUserText.label: 'Solicitudes internas'
+define service definition ZI_DEAL_O4 {
+  expose ZI_Deal as Deal;
+}
+```
+
+La service binding se crea sobre esa definición, tipo OData V4, categoría UI. Un clic en "Publish" registra el servicio, y "Preview" abre una lista Fiori Elements genérica, generada sin una sola línea de anotación de UI. Ahí se puede crear una solicitud interna, guardarla y verla aparecer en la lista, con el `DealUUID` ya resuelto por el framework.
+
+## Lo que queda armado, y lo que sigue
+
+Con estas cuatro piezas activas, `ZI_Deal` ya es un objeto de negocio RAP completo en su forma más simple: create, read, update y delete funcionando desde el preview, sin una línea de lógica de negocio propia. Es deliberadamente poco. Lo que sigue naturalmente desde aquí no es una funcionalidad nueva, sino las piezas que le faltan a este mismo objeto para acercarse a algo real: [validaciones y determinaciones](/blog/rap-validaciones-determinaciones) para que el estado tenga reglas, [el modo draft](/blog/rap-draft) para que un usuario pueda guardar a medias, y [autorizaciones](/blog/rap-autorizaciones) para que no cualquiera pueda tocar la solicitud de otro. Las tres parten exactamente de este mismo `zin_deal`.
+
+Si este primer recorrido te dejó con ganas de ver el mismo patrón aplicado a un caso de negocio real y no a un ejemplo de cuatro campos, el libro [ABAP Cloud: Aplicaciones Empresariales con RAP](/books/abap-rap) construye una aplicación de pedidos de venta completa con el mismo enfoque, caso a caso. Y si prefieres el recorrido guiado con evaluación, el curso [SAP ABAP RAP: Arquitectura Cloud](/courses/sap-abap-rap-arquitectura-cloud/) cubre el mismo terreno con ejercicios sobre un sistema S/4HANA real.
