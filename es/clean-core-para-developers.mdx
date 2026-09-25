@@ -1,6 +1,6 @@
 ---
 title: "Clean Core para developers: extender S/4HANA sin romper el core"
-description: "Modificar el standard no es gratis: se paga en cada upgrade. Una guía práctica, desde el punto de vista del developer, de cómo elegir el camino de extensión correcto antes de escribir la primera línea."
+description: "Modificar el standard no es gratis: se paga en cada upgrade. Guía práctica para elegir, como developer, el camino de extensión Clean Core correcto."
 pubDate: 2026-09-15
 author: "Logali Tech"
 tags: ["ABAP", "Clean Core", "S/4HANA", "RAP", "Extensibilidad"]
@@ -20,7 +20,7 @@ Un ejemplo real, sin dramatizar. Un cliente tenía un recargo por volumen calcul
 
 Ese es el patrón. No es que el upgrade "rompa cosas" al azar. Es que todo lo que vive fuera del contrato liberado nunca tuvo garantía de sobrevivir, y el coste de esa falta de garantía no se paga cuando escribes el código, se paga meses después, con otro equipo, otro contexto, y la presión de un cliente que ve un bug donde tú ves una consecuencia esperada.
 
-## Antes de programar: en qué nivel vive tu extensión
+## Antes de programar en Clean Core: en qué nivel vive tu extensión
 
 Ya vimos el mapa completo de los tres niveles en el post anterior. Para un developer, en la práctica, la decisión real casi siempre se reduce a una pregunta más estrecha: ¿esto vive en **Developer Extensibility on stack** (RAP, CDS liberadas, BAdIs liberados, todo dentro de ABAP Cloud) o tiene que salir a **side by side** en BTP?
 

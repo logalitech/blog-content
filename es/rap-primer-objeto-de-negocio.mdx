@@ -1,6 +1,6 @@
 ---
 title: "Tu primer objeto de negocio con RAP, paso a paso"
-description: "Una tabla, una vista de interfaz y una behavior definition managed, en un solo recorrido de principio a fin. El objeto de negocio RAP más simple que puedes construir hoy mismo."
+description: "Una tabla, una vista de interfaz y una behavior definition managed, en un solo recorrido de principio a fin: tu primer objeto de negocio RAP, paso a paso."
 pubDate: 2026-09-21
 author: "Logali Tech"
 tags: ["ABAP", "RAP", "ABAP Cloud", "CDS"]
@@ -144,7 +144,7 @@ define service definition ZI_DEAL_O4 {
 
 La service binding se crea sobre esa definición, tipo OData V4, categoría UI. Un clic en "Publish" registra el servicio, y "Preview" abre una lista Fiori Elements genérica, generada sin una sola línea de anotación de UI. Ahí se puede crear una solicitud interna, guardarla y verla aparecer en la lista, con el `DealUUID` ya resuelto por el framework.
 
-## Lo que queda armado, y lo que sigue
+## Lo que queda armado en tu objeto de negocio RAP, y lo que sigue
 
 Con estas cuatro piezas activas, `ZI_Deal` ya es un objeto de negocio RAP completo en su forma más simple: create, read, update y delete funcionando desde el preview, sin una línea de lógica de negocio propia. Es deliberadamente poco. Lo que sigue naturalmente desde aquí no es una funcionalidad nueva, sino las piezas que le faltan a este mismo objeto para acercarse a algo real: [validaciones y determinaciones](/blog/rap-validaciones-determinaciones) para que el estado tenga reglas, [el modo draft](/blog/rap-draft) para que un usuario pueda guardar a medias, y [autorizaciones](/blog/rap-autorizaciones) para que no cualquiera pueda tocar la solicitud de otro. Las tres parten exactamente de este mismo `zin_deal`.
 
