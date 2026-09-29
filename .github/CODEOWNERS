@@ -1,0 +1,6 @@
+# Ficheros que controlan la validación automática del contenido.
+# Cualquier cambio en ellos requiere la revisión de IT antes de fusionarse.
+# Los artículos (es/, en/), las landings y el resto del contenido no
+# necesitan aprobación: basta con que el check validate termine en verde.
+/.github/  @Gheorghe-Valer @filipboca
+/scripts/  @Gheorghe-Valer @filipboca
