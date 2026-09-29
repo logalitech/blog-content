@@ -1,21 +1,38 @@
 name: Validate content
 
-# Puerta de calidad del PR: valida el frontmatter/esquema de cada post
-# (campos obligatorios, lang↔carpeta, fecha válida). Autónomo: sin secretos ni
-# acceso a otros repos → seguro en repo público. El render MDX final lo
-# garantiza el build del deploy (que nunca publica si algo falla).
+# Puerta de calidad de cada PR: aplica al contenido las mismas reglas que la
+# compilación de la web (cabecera YAML, esquema de campos, compilación MDX y
+# diagramas Mermaid). Si pasa, el contenido no puede romper la publicación.
+# Los errores bloquean la fusión; el detalle aparece en el resumen del job.
+# Autónomo: sin secretos ni acceso a otros repositorios (repo público).
+#
+# El nombre del job (validate) es el check obligatorio de la protección de
+# la rama main: no se debe cambiar sin actualizar esa protección.
 
 on:
   pull_request:
+  push:
+    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+          cache-dependency-path: scripts/package-lock.json
+
+      - name: Instalar el validador
+        run: npm ci --prefix scripts --no-audit --no-fund
+
       - name: Validar contenido
         run: node scripts/validate.mjs
