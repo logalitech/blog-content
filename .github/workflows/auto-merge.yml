@@ -1,0 +1,101 @@
+name: Fusión automática
+
+# Fusiona sin intervención humana las PR de contenido cuya validación ha
+# terminado en verde y lanza la publicación en la web.
+#
+# Condiciones (todas):
+#   · la validación (flujo Validate content) ha terminado con éxito sobre el
+#     último commit de la PR;
+#   · la PR procede de una rama de este repositorio, nunca de una copia
+#     externa (el repositorio es público);
+#   · el autor tiene permiso de escritura (equipo blog-editors, marketing o IT);
+#   · la PR no está en borrador de GitHub;
+#   · si la creó el editor visual (rama cms/...), está en el estado Ready
+#     (etiqueta decap-cms/pending_publish);
+#   · no modifica .github/ ni scripts/ (esos cambios requieren revisión de IT).
+#
+# Seguridad: se ejecuta con workflow_run, con la versión de este fichero que
+# está en main, sin descargar ni ejecutar el código de la PR; solo consulta
+# metadatos por la API. No usa ningún secreto.
+#
+# Las fusiones hechas con GITHUB_TOKEN no generan eventos push para otros
+# flujos, por eso lanza trigger-deploy.yml de forma explícita
+# (workflow_dispatch sí está admitido).
+
+on:
+  workflow_run:
+    workflows: ["Validate content"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  merge:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Comprobar las condiciones y fusionar
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+
+          skip() {
+            echo "No se fusiona: $1"
+            printf '### Fusión automática omitida\n\n%s\n' "$1" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          }
+
+          PR=$(gh api -X GET "repos/$REPO/pulls" -f state=open -f head="$OWNER:$HEAD_BRANCH" --jq '.[0] // empty')
+          [ -n "$PR" ] || skip "no hay ninguna PR abierta para la rama $HEAD_BRANCH."
+
+          NUM=$(jq -r '.number' <<<"$PR")
+          AUTHOR=$(jq -r '.user.login' <<<"$PR")
+          [ "$(jq -r '.base.ref' <<<"$PR")" = "main" ] || skip "la PR #$NUM no va contra main."
+          [ "$(jq -r '.head.sha' <<<"$PR")" = "$HEAD_SHA" ] || skip "la PR #$NUM tiene commits posteriores a la validación; se evaluará con la siguiente."
+          [ "$(jq -r '.draft' <<<"$PR")" = "false" ] || skip "la PR #$NUM está en borrador de GitHub."
+
+          PERM=$(gh api "repos/$REPO/collaborators/$AUTHOR/permission" --jq '.permission' 2>/dev/null || echo none)
+          case "$PERM" in
+            admin|maintain|write) ;;
+            *) skip "el autor $AUTHOR de la PR #$NUM no tiene permiso de escritura ($PERM)." ;;
+          esac
+
+          if [[ "$HEAD_BRANCH" == cms/* ]]; then
+            jq -e '[.labels[].name] | index("decap-cms/pending_publish")' <<<"$PR" >/dev/null \
+              || skip "la PR #$NUM del editor visual no está en el estado Ready."
+          fi
+
+          FILES=$(gh api "repos/$REPO/pulls/$NUM/files" --paginate --jq '.[].filename')
+          if grep -qE '^(\.github|scripts)/' <<<"$FILES"; then
+            skip "la PR #$NUM modifica .github/ o scripts/ y requiere la revisión de IT."
+          fi
+
+          TITLE=$(jq -r '.title' <<<"$PR")
+          if ! OUT=$(gh api -X PUT "repos/$REPO/pulls/$NUM/merge" -f merge_method=merge -f sha="$HEAD_SHA" \
+                -f commit_title="Merge pull request #$NUM from $OWNER/$HEAD_BRANCH" -f commit_message="$TITLE" 2>&1); then
+            echo "::warning::La PR #$NUM no se ha podido fusionar: $OUT"
+            printf '### Fusión automática no realizada\n\nPR #%s: %s\n' "$NUM" "$OUT" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "PR #$NUM fusionada."
+          gh workflow run trigger-deploy.yml -R "$REPO" --ref main
+          gh api "repos/$REPO/issues/$NUM/comments" \
+            -f body="Fusionada automáticamente tras superar la validación. La publicación en la web está en marcha y tarda unos minutos." >/dev/null
+
+          REF=$(jq -rn --arg b "$HEAD_BRANCH" '$b | split("/") | map(@uri) | join("/")')
+          gh api -X DELETE "repos/$REPO/git/refs/heads/$REF" >/dev/null 2>&1 || true
+
+          printf '### PR #%s fusionada y publicación lanzada\n' "$NUM" >> "$GITHUB_STEP_SUMMARY"

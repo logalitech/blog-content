@@ -1,0 +1,62 @@
+name: Publicar en la web
+
+# Lanza el despliegue de logalitech.com (flujo Deploy de web-frontend) cada
+# vez que cambia el contenido de main, para que un artículo fusionado se
+# publique en minutos sin depender del despliegue programado, que GitHub
+# ejecuta con mejor esfuerzo y solo actúa como respaldo.
+#
+# Disparadores:
+#   · push a main: fusiones hechas por una persona. Se ignoran los cambios que
+#     solo afectan a README.md, .github/ o scripts/, que no cambian la web;
+#   · workflow_dispatch: lo lanza auto-merge.yml tras cada fusión automática
+#     (las fusiones con GITHUB_TOKEN no generan eventos push) y sirve para
+#     pruebas manuales.
+#
+# Seguridad: el repositorio es público. Este flujo nunca se ejecuta con
+# pull_request ni con pull_request_target, de modo que ninguna PR accede a la
+# credencial. La credencial preferida es una GitHub App de la organización
+# instalada solo en web-frontend, con el único permiso Actions: Read and write:
+#   · variable WEB_FRONTEND_DEPLOY_APP_CLIENT_ID (Client ID de la App);
+#   · secreto  WEB_FRONTEND_DEPLOY_APP_KEY (clave privada .pem de la App).
+# Alternativa: secreto WEB_FRONTEND_DEPLOY_TOKEN con un token de grano fino
+# limitado a web-frontend y a ese mismo permiso.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'README.md'
+      - '.github/**'
+      - 'scripts/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Obtener el token de la GitHub App
+        id: app
+        if: vars.WEB_FRONTEND_DEPLOY_APP_CLIENT_ID != ''
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.WEB_FRONTEND_DEPLOY_APP_CLIENT_ID }}
+          private-key: ${{ secrets.WEB_FRONTEND_DEPLOY_APP_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: web-frontend
+          permission-actions: write
+
+      - name: Lanzar el despliegue de web-frontend
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token || secrets.WEB_FRONTEND_DEPLOY_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::error::Falta la credencial: variable WEB_FRONTEND_DEPLOY_APP_CLIENT_ID y secreto WEB_FRONTEND_DEPLOY_APP_KEY (GitHub App), o secreto WEB_FRONTEND_DEPLOY_TOKEN."
+            exit 1
+          fi
+          gh workflow run deploy.yml -R "${GITHUB_REPOSITORY_OWNER}/web-frontend" --ref main
+          printf 'Despliegue de web-frontend lanzado con el contenido %s.\n' "${GITHUB_SHA::7}" >> "$GITHUB_STEP_SUMMARY"
