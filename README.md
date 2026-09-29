@@ -39,15 +39,20 @@ flowchart TB
   A["PR con el artículo"] --> B{"Validación automática"}
   B -->|"Errores"| C["Corregir"]
   C --> A
-  B -->|"Correcta"| D["Fusión en main"]
-  D --> E["Publicación en la web"]
+  B -->|"Correcta"| D["Fusión automática"]
+  D --> E["Despliegue de la web"]
+  E --> F["Publicado en minutos"]
 ```
 
 - Cada cambio entra por **Pull Request**.
 - La validación automática aplica las mismas reglas que la compilación de la
   web: cabecera, campos, sintaxis MDX y diagramas. Un error impide fusionar la PR.
-- **Fusionar en `main` equivale a publicar**: la web incorpora el contenido en su
-  siguiente despliegue, cada 15 minutos.
+- Con la validación en verde, las PR de contenido del equipo se **fusionan
+  solas**, salvo que estén en borrador. Las PR de copias externas del
+  repositorio las revisa y fusiona el equipo.
+- **Fusionar en `main` equivale a publicar**: cada fusión lanza el despliegue de
+  la web, y el artículo queda visible en pocos minutos. Un despliegue programado
+  cada hora actúa como respaldo.
 
 Validación en local (requiere Node.js 20 o superior):
 

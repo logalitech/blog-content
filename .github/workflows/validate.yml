@@ -6,11 +6,18 @@ name: Validate content
 # Los errores bloquean la fusión; el detalle aparece en el resumen del job.
 # Autónomo: sin secretos ni acceso a otros repositorios (repo público).
 #
+# Se repite también cuando una PR sale del estado borrador o cambia de
+# etiqueta (el editor visual marca con decap-cms/pending_publish las PR en
+# estado Ready): el resultado correcto dispara la fusión automática
+# (auto-merge.yml).
+#
 # El nombre del job (validate) es el check obligatorio de la protección de
-# la rama main: no se debe cambiar sin actualizar esa protección.
+# la rama main, y el nombre del flujo (Validate content) lo usa
+# auto-merge.yml: no se deben cambiar sin actualizar ambos.
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
   push:
     branches: [main]
   workflow_dispatch:
@@ -23,9 +30,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: npm
