@@ -1,0 +1,132 @@
+---
+# origen: es/cds-view-mal-estructurada.mdx@8515af80724851465db87227373dcffb67a10e71 (versión generada desde el artículo en español; no editar este fichero)
+title: "Why is your CDS view poorly structured?"
+description: "How to structure a CDS view into Basic, Composite and Consumption layers, and why mixing them breaks your Fiori apps and your reports."
+pubDate: 2026-09-07
+author: "Logali Tech"
+tags: ["ABAP", "ABAP Cloud", "ABAP CDS", "CDS views"]
+category: "ABAP CDS"
+draft: false
+lang: "en"
+translationKey: "cds-view-mal-estructurada"
+---
+A CDS view can compile, return correct data and still be badly structured. The problem does not show up on day one. It shows up three months later, when the second Fiori app that consumes it needs a different piece of data, or when the report that uses it takes four seconds to load and nobody knows why.
+
+## The common mistake: treating the CDS view as if it were a database view
+
+The CDS view is not a SQL view with annotations on top. It is a layer of a model, and that model has three levels with distinct responsibilities: Basic, Composite and Consumption. The most frequent mistake is flattening all three into a single view.
+
+Here is how that looks in practice:
+
+```abap
+@AbapCatalog.sqlViewName: 'ZSALESODATA'
+@OData.publish: true
+define view ZI_SalesKitchenSink
+  as select from vbak as header
+    inner join vbap as item
+      on header.vbeln = item.vbeln
+    left outer join kna1 as customer
+      on header.kunnr = customer.kunnr
+{
+  key header.vbeln,
+      item.posnr,
+      customer.name1,
+
+      sum( item.netwr ) as total_neto
+}
+group by
+  header.vbeln,
+  item.posnr,
+  customer.name1
+```
+
+It works. It is also three things at once. It reads from a base table as a Basic view would. It performs joins as a Composite view would. And it aggregates data and is exposed directly via OData as a Consumption view, with `@OData.publish: true` in the same definition.
+
+The cost does not show up in this view. It shows up in the next one. The Fiori app that needs the order lines without aggregation cannot reuse anything from here: the aggregation comes included, it is not optional. The report that needs to group by another field has to rewrite the join from scratch, because there is no intermediate layer to start from. And any change in how `vbak` and `vbap` relate forces you to touch the only view that exists, with the risk of breaking everything that already consumes it, including the aggregation part that has nothing to do with the change.
+
+That is what it means in practice that "Fiori and analytics reports are built on CDS": they do not consume data, they consume your model. If the model is a single view, the model is you, rewriting it every time something new needs it.
+
+## The fix: three views where there was one
+
+Separating does not mean writing more code. It means writing each piece once, in the place where it can be reused.
+
+The **Basic** layer already exists in any modern S/4HANA system: `I_SalesOrderHeader`, `I_SalesOrderItem`, `I_Customer`. They are 1:1 views on the table, with no logic, and they are your only door to the raw data. If you are writing a `select from vbak`, it is almost always because you have not looked for the Basic view that already exists. The naming rules and the reason behind each layer are covered in [Well-structured CDS views: the VDM layer you won't be ashamed of in three years](/en/blog/well-structured-cds/).
+
+The **Composite** layer is where the join lives, and only the join:
+
+```abap
+@AccessControl.authorizationCheck: #CHECK
+@EndUserText.label: 'Posiciones de pedido con cliente'
+@Metadata.ignorePropagatedAnnotations: true
+define view entity I_SalesOrderItemWithCustomer
+  as select from I_SalesOrderItem as item
+    inner join I_SalesOrderHeader as header
+      on item.SalesOrder = header.SalesOrder
+    left outer join I_Customer as customer
+      on header.Customer = customer.Customer
+{
+  key item.SalesOrder,
+  key item.SalesOrderItem,
+      header.CreationDate,
+      header.Customer,
+      customer.CustomerName,
+
+      @Semantics.amount.currencyCode: 'Currency'
+      item.NetAmount,
+      item.Currency
+}
+```
+
+No aggregation, no UI annotations, no exposure. It returns the finest grain that makes sense in this domain, the order line with its customer resolved. Anyone can start from here.
+
+The **Consumption** layer is the only one that knows which screen or which report it is being built for, and that is why it is the only one that aggregates and the only one that carries annotations:
+
+```abap
+@AccessControl.authorizationCheck: #CHECK
+@EndUserText.label: 'Total neto por cliente'
+@UI.headerInfo: { typeName: 'Cliente', typeNamePlural: 'Clientes' }
+define view entity C_SalesTotalsByCustomer
+  as select from I_SalesOrderItemWithCustomer
+{
+      @UI.lineItem: [{ position: 10 }]
+  key Customer,
+
+      @UI.lineItem: [{ position: 20 }]
+      CustomerName,
+
+      @UI.lineItem: [{ position: 30 }]
+      @Semantics.amount.currencyCode: 'Currency'
+      sum( NetAmount ) as TotalNetAmount,
+
+      Currency
+}
+group by
+  Customer,
+  CustomerName,
+  Currency
+```
+
+Now go back to the three costs from the beginning and look at what happens with each one.
+
+The Fiori app that needed the lines without aggregation consumes `I_SalesOrderItemWithCustomer` and that is it, without touching anything that already exists. The report that grouped by another field writes its own ten-line Consumption view on top of the same Composite, instead of rewriting the join. And if the relationship between header and item changes tomorrow, you touch the Composite, one place, and all consumers keep working because the contract they see, the field names, has not changed.
+
+Notice also what has disappeared: the `@OData.publish: true`. In ABAP Cloud, exposure is not declared inside the view, it is done outside, with a service definition that says which entities are published and a service binding that says with which protocol. That separation is the same idea applied one level up: the view describes the data, it does not decide who consumes it.
+
+> A CDS view that knows at the same time where the data comes from, how it relates and which screen it is for, has three reasons to change. All three will come your way.
+
+## Checklist for reviewing an existing CDS view
+
+Go through it with the view in front of you. Every "yes" is localized technical debt, not a catastrophe, but it is worth knowing that it is there.
+
+1. Does it `select from` a transparent table (`vbak`, `mara`, `bkpf`) instead of a view `I_...`? If so, it has skipped the Basic layer.
+2. Does it have UI annotations (`@UI.*`) and at the same time joins or aggregations? Then it is Consumption and Composite in the same file.
+3. Does it carry `sum`, `count` or a `group by` that not all of its consumers need? Mandatory aggregation is the most common way to block reuse.
+4. Is it exposed with `@OData.publish` from inside? In a new development that goes in a service definition, not in the view.
+5. Does its name describe a specific screen or report (`ZV_INFORME_VENTAS_DIRECCION`) instead of a business object? The name usually gives away the layer before the code does.
+6. Do the amounts carry `@Semantics.amount.currencyCode` and the quantities their unit? If not, each consumer has to guess how to format, and they will guess differently.
+
+If you have checked 1 and 2, do not rewrite anything yet. Extract the Composite first, leave the original view pointing to it and check that the current consumers still return the same result. Refactoring a model is done underneath, without breaking the contract above.
+
+If you want to practice this from start to finish, the course [SAP ABAP Cloud CDS: Core Data Services](/courses/sap-abap-cloud-cds-core-data-services) works through the three layers with guided exercises, and the book [ABAP Cloud: Data Modeling with CDS](/books/abap-cds) takes them from the first entity to the Universal Journal.
+
+In the next article we go into the next step, when an association replaces a join and what that does to the execution plan in HANA, a topic we already touched on in [associations versus joins](/en/blog/cds-asociaciones-vs-joins/).
