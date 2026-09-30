@@ -32,15 +32,15 @@ La tabla se lee en un único punto. Todo lo demás se apoya en capas:
 ```mermaid
 flowchart TB
   A["ACDOCA (tabla)"] --> B["P_ACDOCA (vista privada)"]
-  B --> C["I_GLAccountLineItem RawData"]
+  B --> C["Línea en bruto"]
   C --> D["I_JournalEntryItem"]
   C --> E["I_GLAccountLineItem"]
-  F["I_CoCodeLedger SourceLedger"] --> D
+  F["Mapa de ledgers"] --> D
   F --> E
 ```
 
 - `P_ACDOCA` es la vista privada de SAP que lee la tabla. No se consume.
-- `I_GLAccountLineItemRawData` expone los nombres de negocio (`CompanyCode`, `GLAccount`, `AmountInCompanyCodeCurrency`) y el control de autorización, pero **no resuelve los ledgers de extensión**. SAP lo deja escrito en la cabecera de la propia vista:
+- `I_GLAccountLineItemRawData`, la línea en bruto del diagrama, expone los nombres de negocio (`CompanyCode`, `GLAccount`, `AmountInCompanyCodeCurrency`) y el control de autorización, pero **no resuelve los ledgers de extensión**. SAP lo deja escrito en la cabecera de la propia vista:
 
 ```cds
 // Documentation: This view does not implement the logic for extension ledgers
@@ -50,7 +50,7 @@ flowchart TB
 // I_GLAccountLineItem (for calculation of balances of Balance Sheet Accounts (includes BCF for GL Account Balances calculation)
 ```
 
-- `I_JournalEntryItem` e `I_GLAccountLineItem` añaden la correspondencia entre cada ledger y los ledgers de los que hereda, mediante `I_CoCodeLedgerSourceLedger`. Son las dos vistas de uso general.
+- `I_JournalEntryItem` e `I_GLAccountLineItem` añaden la correspondencia entre cada ledger y los ledgers de los que hereda. La obtienen de `I_CoCodeLedgerSourceLedger`, el mapa de ledgers del diagrama. Son las dos vistas de uso general.
 
 ## Qué vista usar para cada necesidad
 
