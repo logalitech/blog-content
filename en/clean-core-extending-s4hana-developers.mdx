@@ -1,0 +1,41 @@
+---
+# origen: es/clean-core-para-developers.mdx@309d223f00d38076feab974ac19cc1e9e822de48 (versión generada desde el artículo en español; no editar este fichero)
+title: "Clean core for developers: extending S/4HANA without breaking the core"
+description: "Modifying the standard is not free: you pay for it at every upgrade. A practical guide for developers on choosing the right clean core extension path."
+pubDate: 2026-09-15
+author: "Logali Tech"
+tags: ["ABAP", "Clean Core", "S/4HANA", "RAP", "Extensibility"]
+category: "ABAP Cloud"
+draft: false
+lang: "en"
+translationKey: "clean-core-para-developers"
+---
+We already wrote about [what Clean Core really is](/en/blog/clean-core-no-nonsense/) and about [the three levels of extensibility](/en/blog/abap-cloud-tres-niveles-extensibilidad/) that S/4HANA offers. This post does not repeat that ground. It is about what happens when, as a developer, you already know all that and still feel the temptation (or the pressure from a functional consultant in a hurry) to touch an object you should not touch.
+
+## The cost does not show up today, it shows up in the next upgrade
+
+The business case for Clean Core (less rework over five years of maintenance) has already been made in the previous post. What matters here is the cost that you, as a developer, see directly: the one that appears the next time SAP releases a note or an upgrade touches the core.
+
+A real example, without dramatizing. A client had a volume surcharge calculated in a classic, non-released user exit, hooked into standard pricing determination. It worked perfectly. Until the quarterly upgrade that internally reorganized that hook point. The user exit did not disappear from the documentation (because it was never documented as stable), it simply stopped firing in the expected order. Result: three weeks of rework to diagnose something that should not have been an incident, just a line in a release note that nobody had any reason to read.
+
+That is the pattern. It is not that the upgrade "breaks things" at random. It is that everything living outside the released contract never had any guarantee of surviving, and the cost of that lack of guarantee is not paid when you write the code, it is paid months later, with another team, another context, and the pressure of a client who sees a bug where you see an expected consequence.
+
+## Before programming in Clean Core: what level does your extension live at?
+
+We already saw the complete map of the three levels in the previous post. For a developer, in practice, the real decision almost always comes down to a narrower question: does this live in **Developer Extensibility on stack** (RAP, released CDS, released BAdIs, all within ABAP Cloud) or does it have to go **side by side** in BTP?
+
+The answer is almost always that it does live on stack, and that is where real discipline comes in. Three tools cover most cases:
+
+- **RAP (RESTful Application Programming Model)** for new business objects: if you need your own entity, with its own lifecycle, actions and validations, RAP gives you a complete business object, versioned and upgrade-compatible, instead of a loose program that nobody remembers why it exists.
+- **Released CDS views** to model data without touching the standard tables. The key lies in the word "released": an internal CDS view, not published as an API, has the same stability guarantee as a classic user exit, that is, none.
+- **Released BAdIs** to hook into an extension point that SAP does guarantee to maintain. The list of BAdIs released per app is documented, it is not a secret or something you discover by trial and error in production.
+
+The pattern that connects the three tools with the example from the beginning is always the same: the question is not "does it work?", it is "is it released?". A released BAdI follows the same compatibility contract as a public API. A classic user exit, however well it may work today, never had that contract, and that is why it can disappear without warning in any upgrade.
+
+## The question that would have prevented three weeks of rework
+
+Before writing the first line, the question that would have prevented the incident at the beginning is simple: does this hook appear in the list of released extensions for this standard app? If the answer is no, the extension is technically possible but contractually orphaned, and the real cost is paid in the next upgrade, not today, when nobody remembers anymore why it was done that way.
+
+That question, asked in time, costs five minutes of reviewing the app's extensibility documentation. Not asking it costs three weeks of rework, as in the example at the beginning, spread between someone who is no longer on the project and another team that inherits a bug that in reality was never a bug.
+
+If you want the complete map of what is released and what is not, and how real extensions are built on a standard app instead of settling for just the official documentation, the course [S/4HANA Cloud: Clean Core extensibility model](/courses/s-4hana-cloud-modelo-de-extensibilidad-clean-core/) and the book [S/4HANA: Extensibility with Clean Core](/books/clean-core) cover the three layers (in-app, developer extensibility with RAP, and side-by-side on BTP) with extensions built and activated on a real standard application, not just theory.
