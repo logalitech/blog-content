@@ -1,0 +1,3 @@
+# Fin de línea LF en el repositorio y en las copias de trabajo, también en Windows
+# (evita la conversión a CRLF aunque core.autocrlf esté activado en el equipo).
+* text=auto eol=lf

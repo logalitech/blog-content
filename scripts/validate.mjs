@@ -32,6 +32,7 @@ const POST_FIELDS = ['title', 'description', 'pubDate', 'updatedDate', 'author',
 const LANDING_FIELDS = ['title', 'description', 'kicker', 'headline', 'sub', 'bullets', 'form', 'testimonials', 'cta', 'showNav', 'utmCampaign', 'draft'];
 // Componentes que la web pone a disposición del MDX (lp/[slug].astro).
 const LANDING_COMPONENTS = new Set(['Video']);
+const MERMAID_MAX_WORD = 36;
 const MERMAID_TYPES = /^(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram(-v2)?|erDiagram|gantt|pie|journey|mindmap|timeline|gitGraph|quadrantChart|requirementDiagram|C4\w*|sankey(-beta)?|xychart(-beta)?|block(-beta)?|packet(-beta)?|architecture(-beta)?|kanban|radar(-beta)?)\b/;
 
 // ── Registro de incidencias ─────────────────────────────────────────────
@@ -275,6 +276,14 @@ function remarkInspect(ctx) {
             const first = src.split('\n').map((l) => l.trim()).find((l) => l && !l.startsWith('%%')) || '';
             if (!MERMAID_TYPES.test(first))
               warning(ctx.file, line, `el diagrama Mermaid no empieza por un tipo conocido («${first.slice(0, 30)}»)`, 'La primera línea debe ser, por ejemplo, flowchart TB.');
+            // La web parte las etiquetas por los espacios a partir de unos 44
+            // caracteres; una palabra sin espacios más larga que eso se recorta.
+            for (const [, label] of src.matchAll(/"([^"\n]*)"/g)) {
+              const word = label.split(/\s+/).find((w) => [...w].length > MERMAID_MAX_WORD);
+              if (word)
+                warning(ctx.file, line, `la etiqueta Mermaid «${label.slice(0, 50)}» tiene una palabra de ${[...word].length} caracteres sin espacios: se mostrará recortada`,
+                  `Acórtala a ${MERMAID_MAX_WORD} caracteres como máximo o divídela en dos nodos.`);
+            }
           }
           break;
         case 'image':
@@ -377,6 +386,13 @@ try {
   error('categories.json', 1, 'categories.json no se puede leer o no es una lista de textos', 'Formato: ["Categoría 1", "Categoría 2"].');
   categories = [];
 }
+// Las categorías nuevas se fusionan solas: la lista debe quedar limpia.
+categories.forEach((c, i) => {
+  if (c.trim() === '' || c !== c.trim() || /\s{2}/.test(c))
+    error('categories.json', i + 2, `la categoría «${c}» está vacía o tiene espacios sobrantes`, 'Quita los espacios al principio, al final o duplicados.');
+  else if (categories.findIndex((x) => x.toLowerCase() === c.toLowerCase()) !== i)
+    error('categories.json', i + 2, `la categoría «${c}» está repetida`, 'Cada categoría aparece una sola vez; usa la que ya existe.');
+});
 
 const postFiles = [...(await listFiles('es')), ...(await listFiles('en'))];
 const landingFiles = await listFiles('landings');
@@ -385,6 +401,7 @@ if (postFiles.length === 0) error('es', 1, 'no se ha encontrado ningún artícul
 const published = { es: new Map(), en: new Map() }; // slug → draft
 const pendingLinks = [];
 const translationKeys = new Map(); // lang|key → ficheros publicados
+const seriesDates = new Map(); // lang|categoría|pubDate → ficheros publicados
 
 for (const file of [...postFiles, ...landingFiles]) {
   const kind = file.startsWith('landings/') ? 'landing' : 'post';
@@ -408,6 +425,10 @@ for (const file of [...postFiles, ...landingFiles]) {
       if (fm.draft !== true && typeof fm.translationKey === 'string') {
         const k = `${lang}|${fm.translationKey}`;
         translationKeys.set(k, [...(translationKeys.get(k) || []), file]);
+      }
+      if (fm.draft !== true && typeof fm.category === 'string' && fm.pubDate instanceof Date) {
+        const k = `${lang}|${fm.category}|${fm.pubDate.toISOString().slice(0, 10)}`;
+        seriesDates.set(k, [...(seriesDates.get(k) || []), file]);
       }
     } else {
       checkLanding(file, fm, lineOf);
@@ -442,6 +463,13 @@ for (const l of pendingLinks) {
 for (const [k, files] of translationKeys) {
   if (files.length > 1)
     warning(files[1], 1, `translationKey "${k.split('|')[1]}" repetido en ${files.join(' y ')}`, 'Cada artículo necesita una clave propia, compartida solo con su traducción.');
+}
+
+for (const [k, files] of seriesDates) {
+  const [, cat, date] = k.split('|');
+  if (files.length > 1)
+    warning(files[1], 1, `${files.join(' y ')} comparten pubDate ${date} en la serie «${cat}»: la web los ordena por translationKey`,
+      'Si importa el orden de la serie, usa fechas distintas (pubDate es la fecha real de publicación).');
 }
 
 const ok = await report(postFiles.length, landingFiles.length);
