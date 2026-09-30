@@ -1,0 +1,58 @@
+---
+# origen: es/cuando-contratar-consultoria-sap-btp-externa.mdx@4d4e37159e30560b2c5683ae8d026cb4bb1de1fe (versión generada desde el artículo en español; no editar este fichero)
+title: "When to hire external SAP BTP consulting (and when not to)"
+description: "SAP BTP consulting: when it makes sense to bring in senior external help, what to ask before signing, and when the problem is better solved in-house."
+pubDate: 2026-09-17
+author: "Logali Tech"
+tags: ["SAP BTP", "Consulting", "CIO"]
+category: "BAIP Administration"
+draft: false
+lang: "en"
+translationKey: "cuando-contratar-consultoria-sap-btp-externa"
+---
+Every CIO managing SAP BTP eventually reaches the same crossroads: a project has stalled, the internal team has never touched that specific platform service, and someone on the steering committee asks whether external consulting is needed. The question that really matters is not "do we need help?" Almost always the answer is yes, at some point. The question is when, for what exactly, and for how long, because hiring SAP BTP consulting too early costs budget that did not need to be spent, and hiring it too late costs a stalled project or, worse, one that keeps moving forward on a poorly built foundation.
+
+## The decision framework: three questions before signing anything
+
+Before requesting proposals, it is worth answering three questions internally. They are not technical questions, they are questions of scope and timing.
+
+**Is it a capacity problem or a knowledge problem?** If the internal team knows how to do it but does not have the hours, the solution is more hours (internal or subcontracted for execution), not necessarily senior consulting. If the team has never operated that specific BTP service in production, Integration Suite under real load, consumption FinOps, a migration from Cloud Foundry to Kyma, the problem is one of knowledge, and there senior judgment is indeed needed, not just hands.
+
+**Is it a decision made once, or one that repeats?** A one-off migration, an integration architecture designed only once, a consumption governance plan that is defined and then executed internally: that is a natural candidate for a scoped contract with an external partner. If, on the other hand, it is a competency the team will need every month, supporting new integrations, adjusting consumption every quarter, the real question is not whom to hire, it is whom to hire and train in parallel, because paying for external consulting indefinitely for something recurring costs more than building the competency in-house.
+
+**What happens if this goes wrong?** Not every BTP decision carries the same weight. An internal automation that fails can be fixed. A poorly designed FinOps architecture, or a poorly conceived integration between S/4HANA and an external financial system, can cost months of rework or, worse, go miscalculated for an entire year of consumption billing before someone reviews it. The more expensive the error and the harder it is to reverse, the less room there is to learn on the fly with the internal team, and the more sense it makes to pay for already proven judgment.
+
+These three questions do not replace a case-by-case analysis, but they quickly rule out the most common mistake: paying for generic [SAP BTP consulting](/consulting/) for a problem that is actually one of capacity, or trying to solve with internal hours a problem that actually demands judgment never proven in production.
+
+## The real signs that you need senior external help
+
+Beyond the general framework, there are concrete signs that, in practice, indicate it is worth bringing in an external partner specialized in SAP BTP:
+
+**The project touches finance or compliance, and nobody on the team has ever certified it in production.** A misconfigured Integration Suite integration that moves incorrect financial data, or a poorly designed approval flow in Workflow that skips a compliance control, is not discovered in testing: it is discovered in an audit, months later. When the blast radius touches finance or regulatory compliance, prior experience stops being a luxury.
+
+**BTP consumption has already surprised someone on the invoice, more than once.** The consumption-based pricing model of BTP is easy to underestimate at design time and expensive to correct after it is built. If there has already been a billing surprise this year, it is a sign that what is missing is FinOps judgment specific to the platform, not just monitoring discipline.
+
+**It is a one-off migration that will not be repeated in two or three years.** Moving Cloud Foundry to Kyma, or consolidating subaccounts before a reorganization, is work that is done once and never needed again. Building that competency in-house to use it only once does not pay off; hiring it for that specific project, with a closed scope, does.
+
+**The project is greenfield and there is no internal precedent in that part of BTP.** The first real integration on Integration Suite, or the first [CAP app](/books/btp-cap) that goes to production, has nothing to be compared against inside the house. Without a prior internal reference case, every design decision is made on assumptions, not experience, and there a partner who has already seen it fail at another client is worth more than any official documentation.
+
+**There is a fixed regulatory or contractual deadline.** When the deadline is set not by the team but by an auditor or a client, there is no room for someone to learn BTP on the fly on that specific project. The internal team's learning curve is a legitimate investment, but not on the same project that has a date that cannot be moved.
+
+## What to ask a partner before signing
+
+Before signing any proposal, there are four questions that separate a senior partner from one that just says "we do BTP":
+
+- **Real production experience with the exact services you are going to touch.** Not "we do BTP" in general, but that specific service — Integration Suite under real load, consumption FinOps, a Cloud Foundry to Kyma migration — with projects that can be named, even if anonymized.
+- **Closed scope, not open.** A contract that defines what ends the project and when, not a bucket of hours that can be stretched indefinitely. Open scope is the most common sign that the partner is not clear on the problem, or prefers not to be.
+- **Documented knowledge transfer, not informal.** That the documentation and the design rationale stay in-house, in writing, as a deliverable — not just in the head of the consultant who leaves when the contract ends. Without this, one-off consulting becomes permanent dependency.
+- **Verifiable references from projects of comparable size and sector.** Not a logo on a slide, but a real contact you can call who has lived through a project of similar scale, in a sector with the same constraints (regulation, volume, criticality).
+
+## When external consulting is NOT worth hiring
+
+To answer the question in the title fully: not every case justifies bringing in a partner. If the problem is limited in scope, is not going to recur next month, and the blast radius of an error is small (a one-off Clean Core extension, a first contact with the S/4HANA Cloud extensibility model, an architecture question that does not yet compromise anything in production), the low-cost alternative is usually enough: the course [S/4HANA Cloud: Clean Core extensibility model](/courses/s-4hana-cloud-modelo-de-extensibilidad-clean-core/) or the book [S/4HANA: Extensibility with Clean Core](/books/clean-core) cover that ground with applied judgment, not just theory, and cost a fraction of a consulting contract.
+
+The difference from the signals in the previous section is not the topic (BTP in both cases), it is the blast radius and the recurrence. Training the team makes sense when the problem is going to recur and the cost of an initial mistake is low. Hiring makes sense when it is not going to recur, or when a mistake is expensive to undo. Confusing the two cases is the most common way to overspend or underspend.
+
+## The decision, in one sentence
+
+Hiring external SAP BTP consulting is not an all-or-nothing bet: it is a concrete calculation between what a mistake costs if something goes wrong and what it costs to train the team so it does not happen again. When that calculation tips toward the expensive, non-recurring mistake, it is worth talking to someone who has already solved it before — [our consulting team](/consulting/) has done so, among other cases, in a [BTP consumption and cost monitor](/consulting/casos/finops-consumo-btp/) to anticipate exactly the kind of billing surprise described above.
