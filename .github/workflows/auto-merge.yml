@@ -83,11 +83,24 @@ jobs:
           fi
 
           TITLE=$(jq -r '.title' <<<"$PR")
-          if ! OUT=$(gh api -X PUT "repos/$REPO/pulls/$NUM/merge" -f merge_method=merge -f sha="$HEAD_SHA" \
-                -f commit_title="Merge pull request #$NUM from $OWNER/$HEAD_BRANCH" -f commit_message="$TITLE" 2>&1); then
-            echo "::warning::La PR #$NUM no se ha podido fusionar: $OUT"
+          # Cuando varias PR se validan a la vez, compiten por main y GitHub
+          # rechaza las fusiones que llegan después con 405 («Base branch was
+          # modified»). Se reintenta con esperas crecientes.
+          MERGED=""
+          for INTENTO in 1 2 3 4 5 6; do
+            if OUT=$(gh api -X PUT "repos/$REPO/pulls/$NUM/merge" -f merge_method=merge -f sha="$HEAD_SHA" \
+                  -f commit_title="Merge pull request #$NUM from $OWNER/$HEAD_BRANCH" -f commit_message="$TITLE" 2>&1); then
+              MERGED=1
+              break
+            fi
+            if ! grep -qE 'Base branch was modified|HTTP 405|HTTP 409' <<<"$OUT"; then break; fi
+            echo "Intento $INTENTO: main ha cambiado durante la fusión; se reintenta."
+            sleep $(( INTENTO * 5 + RANDOM % 5 ))
+          done
+          if [ -z "$MERGED" ]; then
+            echo "::error::La PR #$NUM no se ha podido fusionar: $OUT"
             printf '### Fusión automática no realizada\n\nPR #%s: %s\n' "$NUM" "$OUT" >> "$GITHUB_STEP_SUMMARY"
-            exit 0
+            exit 1
           fi
 
           echo "PR #$NUM fusionada."
