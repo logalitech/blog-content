@@ -1,0 +1,33 @@
+---
+# origen: es/released-apis-consumir-sin-acoplarte.mdx@7fc855aef5fcf86730c696ca3f6f07b578029b44 (versión generada desde el artículo en español; no editar este fichero)
+title: "Released APIs: consuming the standard without coupling to what you shouldn't"
+description: "Consuming a released SAP API is fine; consuming it badly couples you to the core just like a modification. The difference lies in the access pattern. A practical guide in ABAP Cloud."
+pubDate: 2026-07-09
+author: "Logali Tech"
+tags: ["ABAP", "Clean Core", "RAP", "S/4HANA"]
+category: "ABAP Cloud"
+draft: false
+lang: "en"
+translationKey: "released-apis-consumir"
+---
+This post exists only in Spanish for now; it is the living example that on this blog **translation is not a blocker**: we publish when the content is ready, not when both languages are. If you open the language switcher above, it will take you to the English index instead of a 404.
+
+## The usual misunderstanding
+
+"I use released APIs, therefore I am Clean Core." Not necessarily. You can consume a released API in a way that couples you to the standard just as much as a `Z` modification. The release seal guarantees that **the signature** of the API does not change; it does not guarantee that the way you use it is sound.
+
+## Three patterns that do scale
+
+- **Wrap, do not depend**: never call the released API directly from your business logic. Place it behind an interface of your own. The day SAP replaces it, you change one class, not fifty calls.
+- **Consume data through released CDS, not tables**: even if you know the underlying table, the released CDS is the contract. The table is not.
+- **Treat errors as part of the contract**: if the API returns a `EntityMessage`, map it to your domain. Do not let SAP's technical message leak into your UI.
+
+## Signs that you have coupled too much
+
+1. Your code breaks when you apply a feature pack even though the signature did not change → you depend on non-contractual behavior.
+2. You have `SELECT` to tables that you also expose through a released CDS → you duplicate the source of truth.
+3. Switching from the released API to another requires touching more than one file → the wrapper layer is missing.
+
+> Released means "SAP will not break this signature." It does not mean "you can forget about decoupling." That work is still yours.
+
+The English version of this article will arrive in a future iteration. In the meantime, the rest of the blog is already available in both languages.
