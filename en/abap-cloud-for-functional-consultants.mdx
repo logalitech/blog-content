@@ -1,0 +1,63 @@
+---
+# origen: es/consultor-funcional-abap-cloud.mdx@88e4d6c613655839ab2f750f3f022642ffb918d4 (versión generada desde el artículo en español; no editar este fichero)
+title: "What a functional consultant should understand about ABAP Cloud"
+description: "You do not need to program to defend an SAP project well. The minimum about ABAP Cloud that a functional consultant needs in order not to depend on someone else's judgment."
+pubDate: 2026-09-11
+author: "Logali Tech"
+tags: ["ABAP Cloud", "Career", "RAP"]
+category: "ABAP Cloud"
+draft: false
+lang: "en"
+translationKey: "consultor-funcional-abap-cloud"
+---
+You are a functional consultant. You do not write ABAP, and you do not have to. But every time the technical team tells you "that can't be done" or "that's three sprints", you take that sentence with the same faith a client takes yours. The problem is that on a modern SAP project that sentence is correct half the time, and the other half it is a convenient way to close a conversation. Without a minimum of technical judgment, you cannot tell which is which.
+
+## Why this matters to you even if you do not program
+
+Your job is not to program. It is to translate what the business needs into something the technical team can build, and to translate back what is feasible into something the client can accept. That translation fails in both directions when you do not understand the ground you are talking about.
+
+It fails toward the client when you promise something that ABAP Cloud does not allow you to do the way classic ABAP did, for example modifying a standard transaction directly. And it fails toward the technical team when you accept an inflated estimate without question, or a "it cannot be done" that actually means "we have not tried it with the right extensibility model".
+
+There is a third way in which it fails, a quieter one. When you do not understand the basic vocabulary, you stop taking part in the project's technical conversation and you become the person who only passes messages between two parties that do understand each other. That reduces your weight in decisions, not because anyone takes it away from you, but because you yourself walk out of the room.
+
+None of the three things requires you to know how to program. It requires you to understand what is possible, what is difficult and what is simply different from how it was done before.
+
+## The minimum you need to understand about ABAP Cloud
+
+You do not need the syntax details. You need four ideas, and with them you can already follow ninety percent of the technical conversations in a current S/4HANA project.
+
+**Clean Core.** It is the rule that SAP's standard system is not touched. Everything the customer needs beyond that is built alongside it, as an extension, never by modifying the core. This is not an architectural preference, it is the condition that allows the customer to upgrade their SAP system without their custom developments breaking every time. When someone says "that breaks Clean Core", they are saying that this request puts the next upgrade at risk, not that it is impossible.
+
+**The extensibility model.** All new functionality is built on APIs that SAP releases and commits to keeping stable, or through extension points that SAP defines in advance. If what the customer is asking for fits one of those two paths, it is viable and predictable. If it requires touching something SAP does not expose, it is not that "it cannot be done", it is that you have to look for a different path or negotiate the scope. Knowing which of the two cases you are facing changes the whole conversation with the customer.
+
+**RAP, without the technical detail.** RAP is the way a new business object is built today in ABAP Cloud: an entity with its data, its rules and its interface, all defined coherently and reusable in UI, in API and in reports at the same time. What matters to you as a functional consultant is not how it is written, it is that a well-modeled business object with RAP is reused across different channels without rebuilding it every time. When you estimate scope, that reuse is the difference between weeks and months.
+
+**Released APIs.** SAP publishes a catalog of APIs that are guaranteed to keep working after every upgrade. When the technical team says "we'll go with the released API", they are choosing the stable path. When they say there is no released API for something, that gap is a real project risk data point, not an excuse, and it is exactly the kind of thing that should reach the decision committee in those words.
+
+With these four ideas you can already ask the question that really matters in an estimation meeting: "does this rely on an extension on a released API, or are we touching the core?". That single question separates a serious estimate from one that nobody has verified yet.
+
+If you want to bring these four ideas down to something more structured than a conversation, the course [S/4HANA Cloud: Clean Core extensibility model](/courses/s-4hana-cloud-modelo-de-extensibilidad-clean-core/) is designed exactly for this profile: it does not teach you to program, it teaches you to reason about the extensibility model from the role of the person who decides the scope, not the person who writes the code.
+
+## A real example: the specification that cost three weeks of rework
+
+In a retail project we supported, the functional specification asked for something seemingly simple: when a sales order was created, the system had to automatically calculate a surcharge if the customer belonged to a specific category, and write that surcharge directly into the order table before the standard process continued. The technical team estimated it, built it by modifying the corresponding user exit, and passed acceptance testing without any issues.
+
+Three weeks after the quarterly system update, the surcharge stopped being applied to fifteen percent of orders, with no visible error on screen. The modified user exit depended on an internal field that SAP had reordered in that update, one of the many details that a non-released object does not promise to keep stable. No one detected it until finance reviewed the quarter's margins.
+
+The correct fix was not to patch the user exit again. It was to model the surcharge as a determination within a RAP Business Object for the order, supported by a released API to read the customer category. That, built from the start, would have cost practically the same as the first version. Rebuilt after the incident, with finance breathing down their necks, it cost three weeks and a full review of five other developments with the same pattern.
+
+The difference between the two versions was not in the budget or the technical team. It was in whether someone, in the specification meeting, had asked if that direct access to the order table was released for that use.
+
+## How this helps you defend the client
+
+This is where technical judgment stops being general knowledge and becomes your working tool. A functional consultant who understands these four ideas can do three things that one who does not understand them cannot.
+
+They can **filter an estimate before it reaches the client**. If a three-sprint estimate relies on touching an unreleased object, that figure is not just high, it is fragile: it will survive implementation but not the first upgrade. Flagging it in the internal review, before committing to it with the client, is defending both the budget and the relationship.
+
+They can **explain a "no" without losing authority**. When the client asks for something that breaks Clean Core, the answer "it can't be done" sounds like an excuse. The answer "it can be done, but not this way, because this would put your system's next upgrade at risk, and here is the alternative that does respect it" is the same refusal, turned into professional judgment that the client can understand and accept.
+
+And they can **anticipate the real risk of a development before it is built**, not after it breaks. Going back to the previous example, that question, asked in time, costs nothing. Asked after the incident, it costs three weeks and the client's trust in the technical judgment of the entire team, functional included.
+
+None of these three things requires you to know how to write ABAP. It requires you to know how to ask the right question before it is too late to ask it. And if you want to go deeper into the why behind this discipline, not just the what, the book [S/4HANA: Extensibility with Clean Core](/books/clean-core) covers the same ground from key user to developer, verified in a real system.
+
+This is, at heart, the guide I would give to any ABAP Cloud functional consultant starting today on an S/4HANA project: understand enough to ask the right question, not to write the code.
