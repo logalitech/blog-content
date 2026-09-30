@@ -386,6 +386,13 @@ try {
   error('categories.json', 1, 'categories.json no se puede leer o no es una lista de textos', 'Formato: ["Categoría 1", "Categoría 2"].');
   categories = [];
 }
+// Las categorías nuevas se fusionan solas: la lista debe quedar limpia.
+categories.forEach((c, i) => {
+  if (c.trim() === '' || c !== c.trim() || /\s{2}/.test(c))
+    error('categories.json', i + 2, `la categoría «${c}» está vacía o tiene espacios sobrantes`, 'Quita los espacios al principio, al final o duplicados.');
+  else if (categories.findIndex((x) => x.toLowerCase() === c.toLowerCase()) !== i)
+    error('categories.json', i + 2, `la categoría «${c}» está repetida`, 'Cada categoría aparece una sola vez; usa la que ya existe.');
+});
 
 const postFiles = [...(await listFiles('es')), ...(await listFiles('en'))];
 const landingFiles = await listFiles('landings');
