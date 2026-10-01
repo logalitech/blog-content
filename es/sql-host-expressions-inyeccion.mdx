@@ -1,6 +1,6 @@
 ---
-title: "Host expressions y la @: tu primera defensa contra la inyeccion en ABAP SQL"
-description: "Variables host, host expressions con @( ... ) y SQL dinamico. La diferencia entre pasar un valor y concatenar una cadena es la diferencia entre un sistema seguro y uno con una puerta abierta. Con código real."
+title: "Host expressions y la @: tu primera defensa contra la inyección en ABAP SQL"
+description: "Variables host, host expressions con @( ... ) y SQL dinámico. La diferencia entre pasar un valor y concatenar una cadena es la diferencia entre un sistema seguro y uno con una puerta abierta. Con código real."
 pubDate: 2026-02-21
 author: "Logali Tech"
 tags: ["ABAP", "ABAP SQL", "Seguridad", "SQL Injection"]
@@ -58,13 +58,13 @@ Si `lv_input` trae `AA' OR '1' = '1`, tu `WHERE` se convierte en otra consulta. 
 
 ```mermaid
 flowchart TD
- A["Entrada de usuario"] --> B["Como entra en el SELECT?"]
+ A["Entrada de usuario"] --> B["¿Cómo entra en el SELECT?"]
  B -->|"Variable host @var"| C["Tratada como valor"]
  B -->|"Host expression @( )"| D["Tratada como valor"]
- B -->|"Concatenada en cadena"| E["Tratada como codigo"]
+ B -->|"Concatenada en cadena"| E["Tratada como código"]
  C --> F["Seguro"]
  D --> F
- E --> G["Inyeccion posible"]
+ E --> G["Inyección posible"]
 ```
 
 ## Si de verdad necesitas SQL dinámico

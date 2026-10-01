@@ -23,13 +23,13 @@ Antes de escribir una línea de UI5, recorre esta escalera de menor a mayor cost
 
 ```mermaid
 flowchart TD
- N["Necesito algo que no viene de serie"] --> A["Hay anotacion estandar"]
- A -->|Si| U["Usar anotacion"]
- A -->|No| M["Es UI de entidad estandar SAP"]
- M -->|Si| ME["Metadata extension"]
+ N["Necesito algo que no viene de serie"] --> A["Hay anotación estándar"]
+ A -->|Sí| U["Usar anotación"]
+ A -->|No| M["Es UI de entidad estándar SAP"]
+ M -->|Sí| ME["Metadata extension"]
  M -->|No| E["El floorplan expone extension point"]
- E -->|Si| EP["Extension point"]
- E -->|No| F["Freestyle ultimo recurso"]
+ E -->|Sí| EP["Extension point"]
+ E -->|No| F["Freestyle último recurso"]
 ```
 
 ## Por qué las metadata extensions van primero

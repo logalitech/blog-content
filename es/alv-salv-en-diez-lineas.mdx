@@ -1,6 +1,6 @@
 ---
-title: "Un ALV en diez lineas con CL_SALV_TABLE"
-description: "El listado mas rapido que puedes escribir en ABAP clasico: factory, display y poco mas. Vemos el minimo real con CL_SALV_TABLE, en pantalla completa y dentro de un container, con codigo ABAP real."
+title: "Un ALV en diez líneas con CL_SALV_TABLE"
+description: "El listado más rápido que puedes escribir en ABAP clásico: factory, display y poco más. Vemos el mínimo real con CL_SALV_TABLE, en pantalla completa y dentro de un container, con código ABAP real."
 pubDate: 2026-02-25
 author: "Logali Tech"
 tags: ["ABAP", "ALV", "SALV", "CL_SALV_TABLE"]
@@ -10,9 +10,9 @@ lang: "es"
 translationKey: "alv-salv-en-diez-lineas"
 ---
 
-Hay una prueba que separa las APIs bien disenadas de las que no: **cuanto codigo necesitas para el caso mas simple**. Con `CL_SALV_TABLE`, mostrar una tabla interna en pantalla es literalmente dos llamadas. Ni catalogo de campos, ni callbacks, ni parametros interminables.
+Hay una prueba que separa las APIs bien diseñadas de las que no: **cuánto código necesitas para el caso más simple**. Con `CL_SALV_TABLE`, mostrar una tabla interna en pantalla es literalmente dos llamadas. Ni catálogo de campos, ni callbacks, ni parámetros interminables.
 
-## El minimo absoluto
+## El mínimo absoluto
 
 Tienes tus datos en una tabla interna. Quieres verlos. Esto es todo:
 
@@ -35,11 +35,11 @@ FORM display_salv.
 ENDFORM.
 ```
 
-Con una referencia declarada en el TOP, `DATA go_salv_table TYPE REF TO cl_salv_table`, ya tienes un ALV completo: columnas deducidas del diccionario, ordenacion, filtro, exportacion a hoja de calculo y la barra estandar entera, sin escribir una sola linea de configuracion.
+Con una referencia declarada en el TOP, `DATA go_salv_table TYPE REF TO cl_salv_table`, ya tienes un ALV completo: columnas deducidas del diccionario, ordenación, filtro, exportación a hoja de cálculo y la barra estándar entera, sin escribir una sola línea de configuración.
 
-## Que hace `factory` por ti
+## Qué hace `factory` por ti
 
-El metodo estatico `factory` es el corazon del asunto. Recibe la tabla en `CHANGING` (por referencia, no copia) y te devuelve el objeto ALV en `r_salv_table`. A partir de ahi, todo se pide al objeto.
+El método estático `factory` es el corazón del asunto. Recibe la tabla en `CHANGING` (por referencia, no copia) y te devuelve el objeto ALV en `r_salv_table`. A partir de ahí, todo se pide al objeto.
 
 ```mermaid
 flowchart TB
@@ -50,11 +50,11 @@ flowchart TB
   B -.->|"si algo falla"| X["CATCH cx_salv_msg"]
 ```
 
-Fijate en el `TRY ... CATCH cx_salv_msg`: no es adorno. `factory` puede fallar (por ejemplo, si la tabla no es apta) y lo comunica con una excepcion de clase, no con un `sy-subrc` que se te olvida comprobar. Eso ya es una mejora de robustez respecto a la familia REUSE_ALV.
+Fíjate en el `TRY ... CATCH cx_salv_msg`: no es adorno. `factory` puede fallar (por ejemplo, si la tabla no es apta) y lo comunica con una excepción de clase, no con un `sy-subrc` que se te olvida comprobar. Eso ya es una mejora de robustez respecto a la familia REUSE_ALV.
 
 ## De pantalla completa a container
 
-El mismo `factory` sirve para incrustar el ALV en un control de pantalla. Solo cambia un parametro: le pasas el container.
+El mismo `factory` sirve para incrustar el ALV en un control de pantalla. Solo cambia un parámetro: le pasas el container.
 
 ```abap
 cl_salv_table=>factory(
@@ -66,14 +66,14 @@ cl_salv_table=>factory(
     t_table      = gt_vehiculos ).
 ```
 
-Sin `r_container` tienes pantalla completa; con el, el listado vive dentro de tu `CL_GUI_CUSTOM_CONTAINER` (por ejemplo, en la mitad inferior de un splitter). La API es la misma; solo decides donde se pinta.
+Sin `r_container` tienes pantalla completa; con él, el listado vive dentro de tu `CL_GUI_CUSTOM_CONTAINER` (por ejemplo, en la mitad inferior de un splitter). La API es la misma; solo decides dónde se pinta.
 
-## Por que esto importa
+## Por qué esto importa
 
-- **Menos superficie de error**: no hay catalogo manual que se desincronice con la estructura.
-- **Cambio barato**: anadir una columna a la tabla la anade al ALV, gratis.
-- **Legible**: quien lea el codigo dentro de dos anos entiende `factory` y `display` sin manual.
+- **Menos superficie de error**: no hay catálogo manual que se desincronice con la estructura.
+- **Cambio barato**: añadir una columna a la tabla la añade al ALV, gratis.
+- **Legible**: quien lea el código dentro de dos años entiende `factory` y `display` sin manual.
 
-> Si tu listado de solo lectura necesita mas de quince lineas de plumbing, probablemente estas usando la API equivocada.
+> Si tu listado de solo lectura necesita más de quince líneas de plumbing, probablemente estás usando la API equivocada.
 
-En el proximo post damos el salto a la interaccion: eventos y hotspots, cuando el usuario deja de mirar y empieza a hacer clic.
+En el próximo post damos el salto a la interacción: eventos y hotspots, cuando el usuario deja de mirar y empieza a hacer clic.

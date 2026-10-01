@@ -1,6 +1,6 @@
 ---
-title: "Rendimiento en OData: $filter, $select y paginacion o el servicio se arrastra"
-description: "Un servicio OData que devuelve todas las columnas de todas las filas es una bomba de relojeria. $select recorta lo ancho, $filter recorta lo alto y la paginacion evita traer el mundo. Las tres teclas del rendimiento, con ejemplos reales."
+title: "Rendimiento en OData: $filter, $select y paginación o el servicio se arrastra"
+description: "Un servicio OData que devuelve todas las columnas de todas las filas es una bomba de relojería. $select recorta lo ancho, $filter recorta lo alto y la paginación evita traer el mundo. Las tres teclas del rendimiento, con ejemplos reales."
 pubDate: 2026-04-15
 author: "Logali Tech"
 tags: ["ABAP", "OData", "rendimiento", "paginacion"]
@@ -22,11 +22,11 @@ Y para saber cuántas páginas hay sin traerlas todas, `$count`.
 
 ```mermaid
 flowchart TD
- A["Peticion a la entidad"] --> B["Que se pide?"]
+ A["Petición a la entidad"] --> B["¿Qué se pide?"]
  B -->|"Todo, sin filtros"| C["Millones de filas x todas las columnas"]
  C --> D["Latencia alta y hub saturado"]
  B -->|"$select + $filter + $top/$skip"| E["Ventana filtrada y estrecha"]
- E --> F["Respuesta rapida carga controlada"]
+ E --> F["Respuesta rápida carga controlada"]
  D --> G["Refactor: aplicar las 3 teclas"]
  G --> E
 ```

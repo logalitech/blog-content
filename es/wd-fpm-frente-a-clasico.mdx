@@ -1,6 +1,6 @@
 ---
-title: "Floorplan Manager frente a Web Dynpro clasico: cuando estandarizar y cuando migrar"
-description: "FPM no reemplaza a Web Dynpro: lo estandariza. UIBB, floorplans y configuracion frente a vistas hechas a mano. Y la pregunta incomoda: cuando tiene sentido seguir en WD y cuando saltar a Fiori."
+title: "Floorplan Manager frente a Web Dynpro clásico: cuándo estandarizar y cuándo migrar"
+description: "FPM no reemplaza a Web Dynpro: lo estandariza. UIBB, floorplans y configuración frente a vistas hechas a mano. Y la pregunta incómoda: cuándo tiene sentido seguir en WD y cuándo saltar a Fiori."
 pubDate: 2026-03-14
 author: "Logali Tech"
 tags: ["ABAP", "Web Dynpro", "FPM", "Fiori"]
@@ -22,11 +22,11 @@ FPM no es un framework nuevo que reemplaza a Web Dynpro. Es una **aplicación We
 
 ```mermaid
 flowchart TD
-  FPM["FPM · aplicacion WD generica"] --> FP["Floorplan · OIF · GAF · OVP"]
+  FPM["FPM · aplicación WD genérica"] --> FP["Floorplan · OIF · GAF · OVP"]
   FP --> UIBB1["UIBB Form · configurado"]
   FP --> UIBB2["UIBB List · configurado"]
   FP --> UIBB3["Freestyle UIBB · componente WD propio"]
-  UIBB3 --> CTX["Context y controladores clasicos"]
+  UIBB3 --> CTX["Context y controladores clásicos"]
 ```
 
 Lo importante: por debajo de FPM sigue habiendo context, controladores, métodos hook y binding. Todo lo que aprendiste de WD clásico **sigue vigente**; FPM solo pone orden encima.

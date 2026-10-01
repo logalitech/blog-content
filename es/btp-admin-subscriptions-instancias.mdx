@@ -24,14 +24,14 @@ Una **instancia de servicio** es un recurso que **sí requiere un entorno adicio
 
 Lo que hay que tener claro al crearlas:
 
-- Primero eliges el **plan de servicio** adecuado. Algunos ofrecen un plan gratuito para probar durante un tiempo limitado, por ejemplo 90 dias.
+- Primero eliges el **plan de servicio** adecuado. Algunos ofrecen un plan gratuito para probar durante un tiempo limitado, por ejemplo 90 días.
 - Al crear la instancia se genera una **clave de instancia** (service key) que la app usa para acceder al servicio.
 - Sirven para conectar y extender aplicaciones, propias, de SAP o de terceros, y para acceder a datos, análisis o IA.
 
 ```mermaid
 flowchart TD
   SM["Service Marketplace (subcuenta)"]
-  SM --> SUB["Suscripcion a Aplicacion"]
+  SM --> SUB["Suscripción a Aplicación"]
   SM --> INST["Instancia de Servicio"]
   SUB --> APPUI["App independiente con su UI"]
   INST --> ENV["Requiere entorno: Cloud Foundry o Kyma"]
@@ -62,6 +62,6 @@ cf restart MI_APP
 
 La pregunta correcta antes de tocar el marketplace no es "¿qué servicio quiero?" sino "**¿es una app que se suscribe o un servicio que se instancia y se enlaza?**". De esa respuesta dependen el plan, la cuota que gastas y si necesitas un entorno CF o Kyma detrás.
 
-> Suscribirse a lo que habia que instanciar, o al reves, no falla el dia de la demo. Falla el dia que intentas escalar y descubres que la arquitectura estaba mal desde el marketplace.
+> Suscribirse a lo que había que instanciar, o al revés, no falla el día de la demo. Falla el día que intentas escalar y descubres que la arquitectura estaba mal desde el marketplace.
 
 Con esto cerramos la serie de administración de SAP BTP: jerarquía, entitlements, roles, conectividad, CLI y servicios. Gobernanza desde el día 1, no como parche.

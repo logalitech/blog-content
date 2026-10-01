@@ -1,6 +1,6 @@
 ---
 title: "ATC como radar de readiness a ABAP Cloud"
-description: "Antes de migrar a ABAP Cloud, la variante ABAP_CLOUD_READINESS te dice exactamente que de tu codigo sobrevive y que no. Es el mapa que convierte una migracion a ciegas en un plan."
+description: "Antes de migrar a ABAP Cloud, la variante ABAP_CLOUD_READINESS te dice exactamente qué de tu código sobrevive y qué no. Es el mapa que convierte una migración a ciegas en un plan."
 pubDate: 2026-05-20
 author: "Logali Tech"
 tags: ["ABAP", "ATC", "ABAP Cloud", "readiness"]
@@ -24,13 +24,13 @@ La idea es lanzar esta variante sobre paquetes completos y obtener un inventario
 
 ```mermaid
 flowchart TD
-  PKG["Paquete de codigo actual"] --> ATC["ATC con ABAP_CLOUD_READINESS"]
+  PKG["Paquete de código actual"] --> ATC["ATC con ABAP_CLOUD_READINESS"]
   ATC --> API["Usa APIs liberadas"]
   API -->|"No"| BLK["Bloqueador: buscar API liberada equivalente"]
-  API -->|"Si"| OBJ["Tipo de objeto permitido"]
-  OBJ -->|"No"| REDIS["Rediseno o extension key user"]
-  OBJ -->|"Si"| OK["Listo para ABAP Cloud"]
-  BLK --> PLAN["Plan de remediacion priorizado"]
+  API -->|"Sí"| OBJ["Tipo de objeto permitido"]
+  OBJ -->|"No"| REDIS["Rediseño o extensión key user"]
+  OBJ -->|"Sí"| OK["Listo para ABAP Cloud"]
+  BLK --> PLAN["Plan de remediación priorizado"]
   REDIS --> PLAN
 ```
 

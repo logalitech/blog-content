@@ -1,6 +1,6 @@
 ---
-title: "Catalogo de campos, layout y variantes: lo que sostiene el ALV"
-description: "Columnas, textos, visibilidad, layout y variantes que el usuario guarda. Con SALV se hace con objetos tipados, no con estructuras planas. Cierre de la serie ALV con codigo ABAP real."
+title: "Catálogo de campos, layout y variantes: lo que sostiene el ALV"
+description: "Columnas, textos, visibilidad, layout y variantes que el usuario guarda. Con SALV se hace con objetos tipados, no con estructuras planas. Cierre de la serie ALV con código ABAP real."
 pubDate: 2026-03-05
 author: "Logali Tech"
 tags: ["ABAP", "ALV", "fieldcatalog", "SALV"]
@@ -10,11 +10,11 @@ lang: "es"
 translationKey: "alv-catalogo-layout-y-variantes"
 ---
 
-Debajo de todo ALV hay tres cosas que deciden si el listado es usable: **que columnas se ven y como se llaman** (catalogo), **como se presenta** (layout) y **si el usuario puede guardar su vista** (variantes). Con la familia clasica esto eran estructuras planas rellenadas a mano. Con SALV son objetos que pides al ALV y a los que hablas. La diferencia se nota.
+Debajo de todo ALV hay tres cosas que deciden si el listado es usable: **qué columnas se ven y cómo se llaman** (catálogo), **cómo se presenta** (layout) y **si el usuario puede guardar su vista** (variantes). Con la familia clásica esto eran estructuras planas rellenadas a mano. Con SALV son objetos que pides al ALV y a los que hablas. La diferencia se nota.
 
 ## Columnas: pedir el objeto y configurar
 
-En `CL_SALV_TABLE`, las columnas son un objeto `cl_salv_columns_table`. Optimizas anchos, ocultas tecnicas y renombras, todo con metodos claros y captura de excepcion si la columna no existe.
+En `CL_SALV_TABLE`, las columnas son un objeto `cl_salv_columns_table`. Optimizas anchos, ocultas técnicas y renombras, todo con métodos claros y captura de excepción si la columna no existe.
 
 ```abap
 FORM change_salv_columns.
@@ -40,7 +40,7 @@ FORM change_salv_columns.
 ENDFORM.
 ```
 
-`set_optimize` ajusta los anchos al contenido; `set_visible( false )` esconde `MANDT` y los flags tecnicos; los tres `set_*_text` cubren los tres largos de cabecera que SAP usa segun el ancho disponible. Nada de recorrer un `lvc_t_fcat` a mano.
+`set_optimize` ajusta los anchos al contenido; `set_visible( false )` esconde `MANDT` y los flags técnicos; los tres `set_*_text` cubren los tres largos de cabecera que SAP usa según el ancho disponible. Nada de recorrer un `lvc_t_fcat` a mano.
 
 ```mermaid
 flowchart TB
@@ -78,13 +78,13 @@ ENDFORM.
 
 Tres decisiones que importan:
 
-- **`set_key`** liga las variantes a este programa y a un grupo logico (`ALQ`), de modo que el mismo report puede tener juegos de variantes distintos por contexto.
-- **`set_save_restriction( restrict_none )`** permite guardar variantes de usuario y globales; hay valores mas restrictivos si no quieres que cada usuario cree las suyas.
+- **`set_key`** liga las variantes a este programa y a un grupo lógico (`ALQ`), de modo que el mismo report puede tener juegos de variantes distintos por contexto.
+- **`set_save_restriction( restrict_none )`** permite guardar variantes de usuario y globales; hay valores más restrictivos si no quieres que cada usuario cree las suyas.
 - **`set_initial_layout`** arranca el ALV ya con la vista `DEFAULT`, sin que el usuario tenga que seleccionarla.
 
-## El error clasico del catalogo generado
+## El error clásico del catálogo generado
 
-Cuando trabajas con ALV Grid en lugar de SALV, el catalogo se suele generar con `LVC_FIELDCATALOG_MERGE` a partir de una estructura del diccionario, y luego se retoca campo a campo:
+Cuando trabajas con ALV Grid en lugar de SALV, el catálogo se suele generar con `LVC_FIELDCATALOG_MERGE` a partir de una estructura del diccionario, y luego se retoca campo a campo:
 
 ```abap
 CALL FUNCTION 'LVC_FIELDCATALOG_MERGE'
@@ -103,8 +103,8 @@ LOOP AT gt_fieldcat ASSIGNING <ls_fieldcat>.
 ENDLOOP.
 ```
 
-Funciona, pero es exactamente el tipo de codigo plano que SALV te ahorra. Generas y retocas, generas y retocas; y cada campo nuevo en la estructura es otro `WHEN` que se te olvida.
+Funciona, pero es exactamente el tipo de código plano que SALV te ahorra. Generas y retocas, generas y retocas; y cada campo nuevo en la estructura es otro `WHEN` que se te olvida.
 
-> El catalogo no es un detalle de presentacion: es el contrato entre tus datos y lo que el usuario ve. En SALV ese contrato es codigo tipado; en la version clasica, una estructura que hay que vigilar.
+> El catálogo no es un detalle de presentación: es el contrato entre tus datos y lo que el usuario ve. En SALV ese contrato es código tipado; en la versión clásica, una estructura que hay que vigilar.
 
-Con esto cerramos la serie de ALV. El hilo conductor ha sido siempre el mismo: `CL_SALV_TABLE` como estandar moderno para listados, `CL_GUI_ALV_GRID` cuando de verdad necesitas editar, y en ambos casos, objetos y eventos en lugar de estructuras planas y callbacks.
+Con esto cerramos la serie de ALV. El hilo conductor ha sido siempre el mismo: `CL_SALV_TABLE` como estándar moderno para listados, `CL_GUI_ALV_GRID` cuando de verdad necesitas editar, y en ambos casos, objetos y eventos en lugar de estructuras planas y callbacks.

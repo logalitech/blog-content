@@ -1,6 +1,6 @@
 ---
-title: "Routing en SAPUI5: navegacion con URL, no con setVisible"
-description: "Rutas, patrones y parametros en el manifest, y un router que sincroniza el hash con la vista. Como pasar de una lista a un detalle sin ocultar controles a mano, con navegacion de regreso que respeta el historial."
+title: "Routing en SAPUI5: navegación con URL, no con setVisible"
+description: "Rutas, patrones y parámetros en el manifest, y un router que sincroniza el hash con la vista. Cómo pasar de una lista a un detalle sin ocultar controles a mano, con navegación de regreso que respeta el historial."
 pubDate: 2026-06-13
 author: "Logali Tech"
 tags: ["SAPUI5", "Fiori", "Routing", "Navegacion"]
@@ -10,11 +10,11 @@ lang: "es"
 translationKey: "ui5-routing-navegacion"
 ---
 
-La navegacion casera en UI5 tiene un olor caracteristico: un monton de `setVisible(true)` y `setVisible(false)` para ocultar y mostrar paginas. Funciona hasta que el usuario pulsa Atras en el navegador, o comparte un enlace, o recarga. El **router** de UI5 resuelve exactamente eso: vincula el hash de la URL a una vista, y la navegacion se vuelve declarativa.
+La navegación casera en UI5 tiene un olor característico: un montón de `setVisible(true)` y `setVisible(false)` para ocultar y mostrar páginas. Funciona hasta que el usuario pulsa Atrás en el navegador, o comparte un enlace, o recarga. El **router** de UI5 resuelve exactamente eso: vincula el hash de la URL a una vista, y la navegación se vuelve declarativa.
 
 ## El modelo mental: hash, ruta y target
 
-- **Ruta (`route`)**: un patron de URL. `""` es la home; `details/{invoicePath}` captura un parametro.
+- **Ruta (`route`)**: un patrón de URL. `""` es la home; `details/{invoicePath}` captura un parámetro.
 - **Target**: la vista que se muestra cuando esa ruta coincide.
 - **Router**: el objeto que escucha el hash y monta el target correcto.
 
@@ -23,14 +23,14 @@ Lo declaras todo en el `manifest.json`, y el componente solo lo inicializa.
 ```mermaid
 flowchart TB
  URL["URL hash details/xyz"] --> RT["Router escucha el hash"]
- RT --> M["Ruta que coincide patron: details/[path]"]
+ RT --> M["Ruta que coincide patrón: details/[path]"]
  M --> TG["Target Details.view.xml"]
  TG --> V["Vista montada con su binding"]
 ```
 
 ## Declarar rutas en el descriptor
 
-Dos rutas: la vista general en la raiz y el detalle con un parametro en el patron.
+Dos rutas: la vista general en la raíz y el detalle con un parámetro en el patrón.
 
 ```json
 "routing": {
@@ -52,15 +52,15 @@ Dos rutas: la vista general en la raiz y el detalle con un parametro en el patro
 }
 ```
 
-El componente arranca el router en su `init`, una sola linea:
+El componente arranca el router en su `init`, una sola línea:
 
 ```javascript
 this.getRouter().initialize();
 ```
 
-## Navegar con un parametro
+## Navegar con un parámetro
 
-Desde la lista, al pulsar un item, pides al router que vaya a `Details` pasando el path del contexto vinculado. Nada de estado global: la URL lleva la informacion.
+Desde la lista, al pulsar un ítem, pides al router que vaya a `Details` pasando el path del contexto vinculado. Nada de estado global: la URL lleva la información.
 
 ```javascript
 navigateToDetails: function (oEvent) {
@@ -89,9 +89,9 @@ _onObjectMatch: function (oEvent) {
 }
 ```
 
-## La navegacion de regreso que no rompe el navegador
+## La navegación de regreso que no rompe el navegador
 
-Aqui esta la diferencia entre una app amateur y una profesional. No hagas `navTo` a la home sin mas: consulta el historial. Si el usuario llego desde dentro de la app, `history.go(-1)` respeta su recorrido; si entro por enlace directo, entonces si navegas a la raiz.
+Aquí está la diferencia entre una app amateur y una profesional. No hagas `navTo` a la home sin más: consulta el historial. Si el usuario llegó desde dentro de la app, `history.go(-1)` respeta su recorrido; si entró por enlace directo, entonces sí navegas a la raíz.
 
 ```javascript
 onNavBack: function () {
@@ -104,8 +104,8 @@ onNavBack: function () {
 }
 ```
 
-> Cuando la navegacion vive en la URL, el boton Atras del navegador, los enlaces compartidos y el deep linking funcionan gratis. Cuando vive en `setVisible`, no funciona ninguno.
+> Cuando la navegación vive en la URL, el botón Atrás del navegador, los enlaces compartidos y el deep linking funcionan gratis. Cuando vive en `setVisible`, no funciona ninguno.
 
-Regla practica: si tu app tiene mas de una pantalla, no hay excusa para no usar el router. El coste de declarar dos rutas en el manifest es de cinco minutos; el coste de no hacerlo es cada bug de navegacion que aparezca despues.
+Regla práctica: si tu app tiene más de una pantalla, no hay excusa para no usar el router. El coste de declarar dos rutas en el manifest es de cinco minutos; el coste de no hacerlo es cada bug de navegación que aparezca después.
 
-Con esto cerramos la parte de arquitectura, binding y navegacion. En el ultimo post de esta serie entramos en [TypeScript en SAPUI5](/blog/ui5-typescript/): tipos reales en vez de JSDoc simulado, eventos tipados y errores que el compilador te ensena antes del deploy.
+Con esto cerramos la parte de arquitectura, binding y navegación. En el último post de esta serie entramos en [TypeScript en SAPUI5](/blog/ui5-typescript/): tipos reales en vez de JSDoc simulado, eventos tipados y errores que el compilador te enseña antes del deploy.

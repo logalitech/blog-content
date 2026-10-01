@@ -1,6 +1,6 @@
 ---
 title: "Destinations y Cloud Connector: conectar BTP sin abrir el firewall"
-description: "El puente entre la nube de BTP y tus sistemas on-premise no es abrir puertos. Es Cloud Connector mas destinations bien tipados. Lo desmontamos con las propiedades reales."
+description: "El puente entre la nube de BTP y tus sistemas on-premise no es abrir puertos. Es Cloud Connector más destinations bien tipados. Lo desmontamos con las propiedades reales."
 pubDate: 2026-07-20
 author: "Logali Tech"
 tags: ["BTP", "Administración", "Conectividad", "Destinations"]
@@ -25,7 +25,7 @@ Sus características clave:
 ```mermaid
 flowchart LR
   APP["App en BTP (HTTPS)"] --> CONN["Servicio Connectivity (BTP)"]
-  CONN --> TUNEL["Tunel seguro"]
+  CONN --> TUNEL["Túnel seguro"]
   TUNEL --> CC["Cloud Connector (on-premise)"]
   CC --> FW["Firewall (sin puertos abiertos)"]
   FW --> SYS["S/4HANA, ERP o sistema no SAP"]
@@ -66,6 +66,6 @@ Fíjate en tres decisiones:
 2. `sap-client` y `sap-language` son obligatorias para sistemas S/4HANA: sin ellas, el logon falla o cae en el mandante equivocado.
 3. `WebIDEUsage: odata_abap,dev_abap` habilita el catálogo de servicios y el despliegue en el repositorio ABAP desde Business Application Studio.
 
-> Abrir un puerto es rapido hoy y una brecha de seguridad manana. El tunel del Cloud Connector cuesta una configuracion y te ahorra el incidente.
+> Abrir un puerto es rápido hoy y una brecha de seguridad mañana. El túnel del Cloud Connector cuesta una configuración y te ahorra el incidente.
 
 En el próximo post: administrar todo esto desde la terminal con la btp CLI, sin depender del Cockpit.

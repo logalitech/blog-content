@@ -1,6 +1,6 @@
 ---
 title: "Data binding en SAPUI5: deja de mover datos a mano"
-description: "JSONModel para lo local, ODataModel para el backend, y un binding que refresca la UI solo. Property, aggregation, expression y formateadores personalizados, con codigo real de una lista de facturas."
+description: "JSONModel para lo local, ODataModel para el backend, y un binding que refresca la UI solo. Property, aggregation, expression y formateadores personalizados, con código real de una lista de facturas."
 pubDate: 2026-06-07
 author: "Logali Tech"
 tags: ["SAPUI5", "Fiori", "Data Binding", "OData"]
@@ -10,13 +10,13 @@ lang: "es"
 translationKey: "ui5-data-binding-modelos"
 ---
 
-Si en tu controlador ves un `setText`, un `setValue` o un `forEach` que pinta filas a mano, estas peleando contra el framework. UI5 tiene **data binding**: declaras la relación entre dato y control una vez, y el framework mantiene los dos lados sincronizados. Ese es el corazón de la casa.
+Si en tu controlador ves un `setText`, un `setValue` o un `forEach` que pinta filas a mano, estás peleando contra el framework. UI5 tiene **data binding**: declaras la relación entre dato y control una vez, y el framework mantiene los dos lados sincronizados. Ese es el corazón de la casa.
 
-## Elige el modelo segun de dónde vengan los datos
+## Elige el modelo según de dónde vengan los datos
 
 - **`JSONModel`**: datos en cliente. Un fichero estático, una respuesta que ya tienes en memoria, estado de UI. Two-way binding gratis.
 - **`ODataModel` (V2/V4)**: el backend real. Sabe de metadatos, de `$batch`, de deferred loading. No metes el JSON a mano: apuntas a un `dataSource` del manifest.
-- **`ResourceModel`**: los textos i18n. Es tambien un modelo, y por eso los textos se vinculan igual que cualquier dato.
+- **`ResourceModel`**: los textos i18n. Es también un modelo, y por eso los textos se vinculan igual que cualquier dato.
 
 Los modelos con nombre (`{invoices>...}`, `{i18n>...}`) evitan colisiones. El modelo sin nombre es el por defecto de la vista.
 
@@ -29,9 +29,9 @@ flowchart TB
  UI -->|"two-way"| J
 ```
 
-## Los cuatro tipos de binding que usaras a diario
+## Los cuatro tipos de binding que usarás a diario
 
-**Aggregation binding**: vincula una lista a una coleccion. Cada item se repite por el template.
+**Aggregation binding**: vincula una lista a una colección. Cada ítem se repite por el template.
 
 ```xml
 <List items="{invoices>/Invoices}">
@@ -58,7 +58,7 @@ flowchart TB
     numberState="{= ${invoices>ExtendedPrice} > 50 ? 'Success' : 'Error' }"/>
 ```
 
-**Formateador personalizado**: cuando la regla no cabe en una expresión, un modulo dedicado. Reutilizable, testeable.
+**Formateador personalizado**: cuando la regla no cabe en una expresión, un módulo dedicado. Reutilizable, testeable.
 
 ```javascript
 sap.ui.define([], function () {
@@ -93,7 +93,7 @@ Lo elegante del diseño: pasar de datos locales a backend real casi no toca la v
 }
 ```
 
-> El binding declarativo no es azucar sintactico. Es la diferencia entre una UI que se mantiene sola y un controlador que reescribes cada vez que cambia un requisito.
+> El binding declarativo no es azúcar sintáctico. Es la diferencia entre una UI que se mantiene sola y un controlador que reescribes cada vez que cambia un requisito.
 
 Filtrar tampoco es recorrer arrays: pides al binding que filtre y el resto es cosa del framework.
 
@@ -108,4 +108,4 @@ onFilterInvoices: function (oEvent) {
 }
 ```
 
-La regla practica: si te encuentras escribiendo código para mover un valor del dato al control, para y pregunta cual de estos cuatro bindings te lo hace gratis. Casi siempre hay uno.
+La regla práctica: si te encuentras escribiendo código para mover un valor del dato al control, para y pregunta cuál de estos cuatro bindings te lo hace gratis. Casi siempre hay uno.

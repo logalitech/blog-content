@@ -1,6 +1,6 @@
 ---
-title: "$expand y navegacion en OData: una llamada, no diez"
-description: "Traer un cliente y despues, en otra peticion, sus pedidos, es el patron que mata el rendimiento de una app Fiori. $expand y las navegaciones por asociacion resuelven en una sola llamada lo que muchos hacen en N. Con detalle real."
+title: "$expand y navegación en OData: una llamada, no diez"
+description: "Traer un cliente y después, en otra petición, sus pedidos, es el patrón que mata el rendimiento de una app Fiori. $expand y las navegaciones por asociación resuelven en una sola llamada lo que muchos hacen en N. Con detalle real."
 pubDate: 2026-04-14
 author: "Logali Tech"
 tags: ["ABAP", "OData", "expand", "asociaciones"]
@@ -31,10 +31,10 @@ En el modelo clásico del Gateway, el `$expand` no se resuelve solo: lo implemen
 
 ```mermaid
 flowchart TD
- A["App necesita cliente + pedidos"] --> B["Como los pide?"]
- B -->|"1 llamada por cliente + 1 por sus pedidos"| C["Patron N+1 lento, muchas idas y vueltas"]
+ A["App necesita cliente + pedidos"] --> B["¿Cómo los pide?"]
+ B -->|"1 llamada por cliente + 1 por sus pedidos"| C["Patrón N+1 lento, muchas idas y vueltas"]
  B -->|"1 sola llamada con expand"| D["GET Customers('C001') ?$expand=OrderNav"]
- D --> E["Cabecera y navegacion en una respuesta"]
+ D --> E["Cabecera y navegación en una respuesta"]
  E --> F["Menos latencia, menos carga en el hub"]
  C --> G["Revisar y consolidar"]
  G --> D

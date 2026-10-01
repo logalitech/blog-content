@@ -1,6 +1,6 @@
 ---
 title: "SEGW frente a CDS: el SAP Gateway no ha muerto, ha cambiado de sitio"
-description: "El modelo clasico del SAP Gateway con SEGW, clases MPC y DPC, sigue vivo en muchos sistemas. El enfoque CDS moderno es mas limpio, pero no siempre es el que toca. Cuando cada uno, sin dogma."
+description: "El modelo clásico del SAP Gateway con SEGW, clases MPC y DPC, sigue vivo en muchos sistemas. El enfoque CDS moderno es más limpio, pero no siempre es el que toca. Cuándo cada uno, sin dogma."
 pubDate: 2026-04-20
 author: "Logali Tech"
 tags: ["ABAP", "OData", "SAP Gateway", "SEGW"]
@@ -49,11 +49,11 @@ Con CDS declaras el modelo una vez y el runtime lo pone SADL. No escribes GET_EN
 
 ```mermaid
 flowchart TD
- A["Necesito un servicio OData"] --> B["Sistema y caso?"]
- B -->|"Sistema clasico logica compleja a mano"| C["SEGW: MPC_EXT + DPC_EXT"]
+ A["Necesito un servicio OData"] --> B["¿Sistema y caso?"]
+ B -->|"Sistema clásico lógica compleja a mano"| C["SEGW: MPC_EXT + DPC_EXT"]
  B -->|"S/4HANA moderno lectura sobre modelo de datos"| D["CDS + Service Binding"]
- C --> E["Redefines CRUD metodo a metodo"]
- D --> F["SADL resuelve lectura generica"]
+ C --> E["Redefines CRUD método a método"]
+ D --> F["SADL resuelve lectura genérica"]
  E --> G["Servicio OData"]
  F --> G
 ```

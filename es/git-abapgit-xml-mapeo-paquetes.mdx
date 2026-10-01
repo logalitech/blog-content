@@ -1,6 +1,6 @@
 ---
 title: "El .abapgit.xml y el mapeo de paquetes: la pieza que casi nadie mira"
-description: "Ese fichero pequeno en la raiz del repo decide como se traducen los paquetes ABAP a carpetas y viceversa. Folder logic FULL o PREFIX, master language, starting folder. Aqui esta lo que hace y por que importa."
+description: "Ese fichero pequeño en la raíz del repo decide cómo se traducen los paquetes ABAP a carpetas y viceversa. Folder logic FULL o PREFIX, master language, starting folder. Aquí está lo que hace y por qué importa."
 pubDate: 2026-05-04
 author: "Logali Tech"
 tags: ["ABAP", "abapGit", "git", "paquetes"]
@@ -10,11 +10,11 @@ lang: "es"
 translationKey: "git-abapgit-xml-mapeo-paquetes"
 ---
 
-Cuando haces tu primer push con abapGit, en la raiz del repositorio aparece un fichero discreto: `.abapgit.xml`. La mayoria de la gente lo ignora hasta que un pull importa objetos en el paquete equivocado. Entonces descubren, tarde, que ese fichero **es el contrato entre tu jerarquia de paquetes ABAP y la estructura de carpetas del repo**.
+Cuando haces tu primer push con abapGit, en la raíz del repositorio aparece un fichero discreto: `.abapgit.xml`. La mayoría de la gente lo ignora hasta que un pull importa objetos en el paquete equivocado. Entonces descubren, tarde, que ese fichero **es el contrato entre tu jerarquía de paquetes ABAP y la estructura de carpetas del repo**.
 
-## Que contiene
+## Qué contiene
 
-El `.abapgit.xml` guarda la configuracion del repositorio. Sus campos clave:
+El `.abapgit.xml` guarda la configuración del repositorio. Sus campos clave:
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -35,21 +35,21 @@ El `.abapgit.xml` guarda la configuracion del repositorio. Sus campos clave:
 </abapGit>
 ```
 
-- **MASTER_LANGUAGE**: el idioma maestro de los textos. Fijalo bien desde el principio; cambiarlo despues es doloroso.
-- **STARTING_FOLDER**: la carpeta donde vive el codigo, casi siempre `/src/`.
-- **FOLDER_LOGIC**: como se mapean paquetes a carpetas. Es el campo que decide todo.
+- **MASTER_LANGUAGE**: el idioma maestro de los textos. Fíjalo bien desde el principio; cambiarlo después es doloroso.
+- **STARTING_FOLDER**: la carpeta donde vive el código, casi siempre `/src/`.
+- **FOLDER_LOGIC**: cómo se mapean paquetes a carpetas. Es el campo que decide todo.
 - **IGNORE**: patrones de ficheros que abapGit no toca.
 
-## FULL frente a PREFIX: la decision que importa
+## FULL frente a PREFIX: la decisión que importa
 
-Al vincular un paquete, abapGit te pregunta por la logica de carpetas. Hay dos opciones y no son intercambiables a la ligera:
+Al vincular un paquete, abapGit te pregunta por la lógica de carpetas. Hay dos opciones y no son intercambiables a la ligera:
 
-- **FULL**: acepta cualquier nombre de subpaquete. La estructura de carpetas refleja la jerarquia real de paquetes tal cual.
-- **PREFIX**: exige que todos los subpaquetes lleven el nombre del paquete principal como prefijo. Las carpetas usan solo la parte que sobra tras el prefijo, asi que quedan mas cortas.
+- **FULL**: acepta cualquier nombre de subpaquete. La estructura de carpetas refleja la jerarquía real de paquetes tal cual.
+- **PREFIX**: exige que todos los subpaquetes lleven el nombre del paquete principal como prefijo. Las carpetas usan solo la parte que sobra tras el prefijo, así que quedan más cortas.
 
 ```mermaid
 flowchart TD
- ROOT["Paquete raiz ZPROJECT"] --> SUB1["Subpaquete ZPROJECT_CORE"]
+ ROOT["Paquete raíz ZPROJECT"] --> SUB1["Subpaquete ZPROJECT_CORE"]
  ROOT --> SUB2["Subpaquete ZPROJECT_UI"]
  SUB1 --> F1["FULL: /src/zproject_core/"]
  SUB1 --> P1["PREFIX: /src/core/"]
@@ -57,15 +57,15 @@ flowchart TD
  SUB2 --> P2["PREFIX: /src/ui/"]
 ```
 
-Mi recomendacion practica: **FULL por defecto**. Es la opcion que abapGit sugiere y la menos sorprendente, porque el nombre de la carpeta coincide con el nombre real del paquete. PREFIX solo compensa si tu convencion de nombres es tan estricta que el prefijo repetido en cada carpeta se vuelve ruido puro.
+Mi recomendación práctica: **FULL por defecto**. Es la opción que abapGit sugiere y la menos sorprendente, porque el nombre de la carpeta coincide con el nombre real del paquete. PREFIX solo compensa si tu convención de nombres es tan estricta que el prefijo repetido en cada carpeta se vuelve ruido puro.
 
-## Por que esto te muerde
+## Por qué esto te muerde
 
-El escenario clasico del dolor: vinculas un repo con FOLDER_LOGIC FULL en el sistema origen, y en el destino intentas hacer pull esperando otra estructura de paquetes. Si el mapeo no cuadra con los paquetes que existen, o abapGit crea paquetes que no querias o falla el pull.
+El escenario clásico del dolor: vinculas un repo con FOLDER_LOGIC FULL en el sistema origen, y en el destino intentas hacer pull esperando otra estructura de paquetes. Si el mapeo no cuadra con los paquetes que existen, o abapGit crea paquetes que no querías o falla el pull.
 
-- El `.abapgit.xml` **viaja con el repo**, no con el sistema. Quien haga pull hereda tu decision.
+- El `.abapgit.xml` **viaja con el repo**, no con el sistema. Quien haga pull hereda tu decisión.
 - Cambiar FOLDER_LOGIC a mitad de proyecto reorganiza todas las carpetas: un commit gigante y ruidoso.
 
-> El `.abapgit.xml` no es metadata decorativa. Es el mapa que traduce paquetes a carpetas. Decidelo una vez, al crear el repo, y no lo toques salvo que sepas exactamente que reorganizacion estas provocando.
+> El `.abapgit.xml` no es metadata decorativa. Es el mapa que traduce paquetes a carpetas. Decídelo una vez, al crear el repo, y no lo toques salvo que sepas exactamente qué reorganización estás provocando.
 
 Consejo final: fija MASTER_LANGUAGE y FOLDER_LOGIC en el primer commit, revisa que STARTING_FOLDER sea `/src/`, y deja ese fichero en paz. Es de las pocas cosas en abapGit donde "configurar y olvidar" es la respuesta correcta.

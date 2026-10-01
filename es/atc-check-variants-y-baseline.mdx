@@ -1,6 +1,6 @@
 ---
 title: "Check variants y baseline: el ATC no mide igual para todos"
-description: "ABAP_CLOUD_DEVELOPMENT_DEFAULT, ABAP_CLOUD_READINESS, ABAP_CLOUD_DEVELOPMENT_PARTNER. Elegir variante y fijar una baseline es lo que separa un ATC util de un mar de warnings que nadie lee."
+description: "ABAP_CLOUD_DEVELOPMENT_DEFAULT, ABAP_CLOUD_READINESS, ABAP_CLOUD_DEVELOPMENT_PARTNER. Elegir variante y fijar una baseline es lo que separa un ATC útil de un mar de warnings que nadie lee."
 pubDate: 2026-05-16
 author: "Logali Tech"
 tags: ["ABAP", "ATC", "variantes", "baseline"]
@@ -22,11 +22,11 @@ Cuando lanzas `ABAP Test Cockpit with…` sobre un objeto, ADT te deja elegir va
 
 ```mermaid
 flowchart TD
-  OBJ["Objeto o paquete"] --> Q["Que estoy midiendo"]
+  OBJ["Objeto o paquete"] --> Q["Qué estoy midiendo"]
   Q -->|"Desarrollo diario"| D["ABAP_CLOUD_DEVELOPMENT_DEFAULT"]
-  Q -->|"Auditoria de readiness"| R["ABAP_CLOUD_READINESS"]
-  Q -->|"Codigo de partner"| P["ABAP_CLOUD_DEVELOPMENT_PARTNER"]
-  D --> RES["Findings segun la vara elegida"]
+  Q -->|"Auditoría de readiness"| R["ABAP_CLOUD_READINESS"]
+  Q -->|"Código de partner"| P["ABAP_CLOUD_DEVELOPMENT_PARTNER"]
+  D --> RES["Findings según la vara elegida"]
   R --> RES
   P --> RES
 ```
