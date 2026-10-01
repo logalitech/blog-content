@@ -1,6 +1,6 @@
 ---
-title: "Handlers en CAP: escribe menos JavaScript, no mas"
-description: "El runtime generico de CAP ya resuelve el CRUD. Los handlers en Node.js son para la logica que el modelo no puede expresar: acciones, funciones y validaciones. Con un cancelOrder real."
+title: "Handlers en CAP: escribe menos JavaScript, no más"
+description: "El runtime genérico de CAP ya resuelve el CRUD. Los handlers en Node.js son para la lógica que el modelo no puede expresar: acciones, funciones y validaciones. Con un cancelOrder real."
 pubDate: 2026-07-09
 author: "Logali Tech"
 tags: ["SAP CAP", "Node.js", "CDS", "BTP"]
@@ -10,9 +10,9 @@ lang: "es"
 translationKey: "cap-servicios-handlers"
 ---
 
-El malentendido mas caro con CAP es creer que hay que programar cada operacion. No. El **runtime generico** de CAP ya sirve create, read, update, delete, paginacion, filtros `$filter`, expansiones `$expand` y hasta value helps, todo derivado del modelo CDS. Si estas escribiendo un handler para un READ que solo lee la tabla, lo estas haciendo mal.
+El malentendido más caro con CAP es creer que hay que programar cada operación. No. El **runtime genérico** de CAP ya sirve create, read, update, delete, paginación, filtros `$filter`, expansiones `$expand` y hasta value helps, todo derivado del modelo CDS. Si estás escribiendo un handler para un READ que solo lee la tabla, lo estás haciendo mal.
 
-## Donde acaba el modelo y empieza el codigo
+## Dónde acaba el modelo y empieza el código
 
 Los handlers en Node.js son para lo que el modelo **no** puede declarar:
 
@@ -22,10 +22,10 @@ Los handlers en Node.js son para lo que el modelo **no** puede declarar:
 
 ```mermaid
 flowchart TD
-  R["Peticion OData"] --> G["Es CRUD puro?"]
-  G -->|Si| H["Runtime generico - sin codigo"]
+  R["Petición OData"] --> G["¿Es CRUD puro?"]
+  G -->|Sí| H["Runtime genérico - sin código"]
   G -->|No| C["Handler en srv/service.js"]
-  C --> B["Logica de negocio y acciones"]
+  C --> B["Lógica de negocio y acciones"]
 ```
 
 ## Funciones y acciones: se declaran en CDS
@@ -43,9 +43,9 @@ extend service CatalogService with {
 }
 ```
 
-Fijate en la distincion que CAP toma en serio: una **funcion** (`getClientTaxRate`) lee y no cambia estado; una **accion** (`cancelOrder`) modifica. No es cosmetica: OData mapea la funcion a GET y la accion a POST.
+Fíjate en la distinción que CAP toma en serio: una **función** (`getClientTaxRate`) lee y no cambia estado; una **acción** (`cancelOrder`) modifica. No es cosmética: OData mapea la función a GET y la acción a POST.
 
-## El handler: solo la logica que importa
+## El handler: solo la lógica que importa
 
 En `srv/catalog-service.js` implementas el comportamiento con la API `srv`:
 
@@ -70,14 +70,14 @@ module.exports = (srv) => {
 
 Tres cosas que hacen bien este handler:
 
-1. Usa **CQL** (`SELECT`, `UPDATE`) en vez de SQL crudo: agnostico de la base de datos.
+1. Usa **CQL** (`SELECT`, `UPDATE`) en vez de SQL crudo: agnóstico de la base de datos.
 2. Devuelve errores con `req.error`, no lanza excepciones sueltas.
-3. No reimplementa el CRUD de `Orders`: solo la regla de cancelacion. Todo lo demas lo sigue sirviendo el runtime.
+3. No reimplementa el CRUD de `Orders`: solo la regla de cancelación. Todo lo demás lo sigue sirviendo el runtime.
 
-## El anti-patron habitual
+## El anti-patrón habitual
 
-Handlers `srv.on('READ', ...)` que hacen un `SELECT` y devuelven exactamente lo que el runtime ya devolveria. Eso no aporta nada y te quita paginacion y filtrado gratis. Si tu handler no anade una regla que el modelo no puede expresar, borralo.
+Handlers `srv.on('READ', ...)` que hacen un `SELECT` y devuelven exactamente lo que el runtime ya devolvería. Eso no aporta nada y te quita paginación y filtrado gratis. Si tu handler no añade una regla que el modelo no puede expresar, bórralo.
 
-> En CAP el mejor handler es el que no existe. El segundo mejor es el que cabe en quince lineas porque solo contiene la regla de negocio.
+> En CAP el mejor handler es el que no existe. El segundo mejor es el que cabe en quince líneas porque solo contiene la regla de negocio.
 
-En el proximo post: CAP contra RAP, cuando cada uno, sin bandos.
+En el próximo post: CAP contra RAP, cuándo cada uno, sin bandos.

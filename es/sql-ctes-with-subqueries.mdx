@@ -47,8 +47,8 @@ Si el destino de la consulta principal no es una tabla interna (es decir, no hay
 
 ```mermaid
 flowchart TD
- A["Logica de consulta compleja"] --> B["Se reutiliza en varios sitios?"]
- B -->|"Si"| C["Vista CDS en el modelo VDM"]
+ A["Lógica de consulta compleja"] --> B["¿Se reutiliza en varios sitios?"]
+ B -->|"Sí"| C["Vista CDS en el modelo VDM"]
  B -->|"No, es de un uso"| D["CTE con WITH dentro de la sentencia"]
  D --> E["Legible, local, sin ensuciar el DDIC"]
  C --> F["Reutilizable y gobernada"]

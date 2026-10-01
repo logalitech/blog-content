@@ -1,6 +1,6 @@
 ---
 title: "Toolbar y funciones propias en ALV: botones que hacen tu trabajo"
-description: "La barra estandar es solo el principio. Con SALV anades funciones propias con add_function; con ALV Grid, botones en el evento toolbar. Vemos ambos caminos con codigo ABAP real."
+description: "La barra estándar es solo el principio. Con SALV añades funciones propias con add_function; con ALV Grid, botones en el evento toolbar. Vemos ambos caminos con código ABAP real."
 pubDate: 2026-03-01
 author: "Logali Tech"
 tags: ["ABAP", "ALV", "toolbar", "SALV"]
@@ -10,11 +10,11 @@ lang: "es"
 translationKey: "alv-toolbar-y-funciones-propias"
 ---
 
-Un ALV trae gratis ordenar, filtrar, sumar y exportar. Pero tu negocio casi siempre necesita algo mas: un boton "Generar contrato", un "Guardar cambios", un "Enviar a aprobacion". Ahi es donde entra la **funcion propia**. Y otra vez, SALV y ALV Grid lo resuelven de forma distinta; conviene saber cual usar.
+Un ALV trae gratis ordenar, filtrar, sumar y exportar. Pero tu negocio casi siempre necesita algo más: un botón "Generar contrato", un "Guardar cambios", un "Enviar a aprobación". Ahí es donde entra la **función propia**. Y otra vez, SALV y ALV Grid lo resuelven de forma distinta; conviene saber cuál usar.
 
-## En SALV: pide el objeto de funciones y anade
+## En SALV: pide el objeto de funciones y añade
 
-Con `CL_SALV_TABLE`, la barra de herramientas es un objeto (`cl_salv_functions_list`) que pides al ALV. Primero activas las funciones estandar, luego anades las tuyas.
+Con `CL_SALV_TABLE`, la barra de herramientas es un objeto (`cl_salv_functions_list`) que pides al ALV. Primero activas las funciones estándar, luego añades las tuyas.
 
 ```abap
 FORM set_salv_functions.
@@ -43,11 +43,11 @@ FORM set_salv_functions.
 ENDFORM.
 ```
 
-`set_all( )` habilita la barra completa de fabrica; `add_function` coloca tu boton a la derecha de las funciones estandar. El `TRY ... CATCH` no es opcional: la clase avisa por excepcion si el nombre ya existe (`cx_salv_existing`) o la llamada es incorrecta (`cx_salv_wrong_call`).
+`set_all( )` habilita la barra completa de fábrica; `add_function` coloca tu botón a la derecha de las funciones estándar. El `TRY ... CATCH` no es opcional: la clase avisa por excepción si el nombre ya existe (`cx_salv_existing`) o la llamada es incorrecta (`cx_salv_wrong_call`).
 
-## Recoger la pulsacion: el evento added_function
+## Recoger la pulsación: el evento added_function
 
-Anadir el boton es la mitad. Falta reaccionar cuando el usuario lo pulsa. En SALV eso llega por el evento `added_function` de `cl_salv_events_table`.
+Añadir el botón es la mitad. Falta reaccionar cuando el usuario lo pulsa. En SALV eso llega por el evento `added_function` de `cl_salv_events_table`.
 
 ```abap
 CLASS lcl_salv_event DEFINITION.
@@ -67,7 +67,7 @@ CLASS lcl_salv_event IMPLEMENTATION.
 ENDCLASS.
 ```
 
-Y el enlace, con el patron de siempre: pides el objeto de eventos y registras el handler.
+Y el enlace, con el patrón de siempre: pides el objeto de eventos y registras el handler.
 
 ```abap
 FORM set_salv_events.
@@ -82,16 +82,16 @@ ENDFORM.
 
 ```mermaid
 flowchart TB
-  A["get_functions( )"] --> B["set_all( ) - barra estandar"]
+  A["get_functions( )"] --> B["set_all( ) - barra estándar"]
   B --> C["add_function( name = RENT )"]
-  C --> D["Boton visible en la barra"]
+  C --> D["Botón visible en la barra"]
   D -->|"usuario lo pulsa"| E["evento added_function"]
   E --> F["handle_added_function - CASE RENT"]
 ```
 
 ## En ALV Grid: el evento toolbar
 
-Si trabajas con `CL_GUI_ALV_GRID` (por ejemplo, porque necesitas edicion), la barra se construye en el evento `toolbar`, anadiendo tu boton a la tabla `mt_toolbar`:
+Si trabajas con `CL_GUI_ALV_GRID` (por ejemplo, porque necesitas edición), la barra se construye en el evento `toolbar`, añadiendo tu botón a la tabla `mt_toolbar`:
 
 ```abap
 METHOD handle_toolbar.
@@ -103,13 +103,13 @@ METHOD handle_toolbar.
 ENDMETHOD.
 ```
 
-La pulsacion se recoge luego en `handle_user_command` mirando `e_ucomm`. Es mas manual que SALV, pero te da control total sobre la barra.
+La pulsación se recoge luego en `handle_user_command` mirando `e_ucomm`. Es más manual que SALV, pero te da control total sobre la barra.
 
-## Cual usar
+## Cuál usar
 
-- **Listado de solo lectura con acciones puntuales**: SALV con `add_function`. Menos codigo, excepciones tipadas.
+- **Listado de solo lectura con acciones puntuales**: SALV con `add_function`. Menos código, excepciones tipadas.
 - **Grid editable o barra muy personalizada**: `CL_GUI_ALV_GRID` con el evento `toolbar`.
 
-> Un boton propio sin manejador es un boton que engana al usuario. Anadir la funcion y registrar el evento son una sola tarea, no dos.
+> Un botón propio sin manejador es un botón que engaña al usuario. Añadir la función y registrar el evento son una sola tarea, no dos.
 
-En el proximo post entramos en terreno delicado: el ALV editable, donde el usuario ya no solo lee, sino que escribe, y hay que validar.
+En el próximo post entramos en terreno delicado: el ALV editable, donde el usuario ya no solo lee, sino que escribe, y hay que validar.

@@ -1,6 +1,6 @@
 ---
 title: "abapGit: qué es y por qué deberías versionar tu ABAP de una vez"
-description: "abapGit es un cliente Git escrito en ABAP que corre dentro del propio sistema. No es un capricho de la comunidad: es la forma de sacar tu codigo del ostracismo del transporte y ponerlo bajo control de versiones real."
+description: "abapGit es un cliente Git escrito en ABAP que corre dentro del propio sistema. No es un capricho de la comunidad: es la forma de sacar tu código del ostracismo del transporte y ponerlo bajo control de versiones real."
 pubDate: 2026-05-12
 author: "Logali Tech"
 tags: ["ABAP", "abapGit", "git", "versionado"]
@@ -14,15 +14,15 @@ Durante veinte años, el control de versiones en ABAP fue una tabla de la base d
 
 ## Qué es exactamente
 
-abapGit es una herramienta de codigo abierto, creada y mantenida por Lars Hvam, compatible desde ABAP 702 SP8 en adelante. La idea es simple y potente a la vez:
+abapGit es una herramienta de código abierto, creada y mantenida por Lars Hvam, compatible desde ABAP 702 SP8 en adelante. La idea es simple y potente a la vez:
 
 - Toma tus objetos de desarrollo (clases, CDS, informes, estructuras) y los **serializa a ficheros de texto** dentro de una carpeta `src`.
 - Esos ficheros viven en un repositorio Git, normalmente en GitHub.
-- Desde ahí puedes importarlos y exportarlos entre sistemas, ver diffs, crear ramas y volver atras.
+- Desde ahí puedes importarlos y exportarlos entre sistemas, ver diffs, crear ramas y volver atrás.
 
-Lo importante: no reemplaza al transporte estandar, **convive** con el. abapGit no es un plugin propietario oscuro; forma parte del ecosistema open source de ABAP que puedes encontrar catalogado en `dotabap.org`, junto con abaplint y otros.
+Lo importante: no reemplaza al transporte estándar, **convive** con él. abapGit no es un plugin propietario oscuro; forma parte del ecosistema open source de ABAP que puedes encontrar catalogado en `dotabap.org`, junto con abaplint y otros.
 
-## Por que versionar ABAP en serio
+## Por qué versionar ABAP en serio
 
 ```mermaid
 flowchart TD
@@ -30,20 +30,20 @@ flowchart TD
   SER --> REPO["Repositorio Git (GitHub)"]
   REPO --> HIST["Historial, diffs y ramas"]
   REPO --> PULL["Pull en otro sistema"]
-  HIST --> AUD["Auditoria: quien cambio que y cuando"]
+  HIST --> AUD["Auditoría: quién cambió qué y cuándo"]
   PULL --> OTRO["Instancia destino sin STMS"]
 ```
 
-Las ventajas no son teoricas:
+Las ventajas no son teóricas:
 
-- **Historial real**: cada commit lleva autor, fecha y mensaje. Sabes por que existe cada linea.
+- **Historial real**: cada commit lleva autor, fecha y mensaje. Sabes por qué existe cada línea.
 - **Diffs legibles**: comparar dos versiones de una clase es un diff de texto, no abrir dos ventanas de SE80 y entrecerrar los ojos.
-- **Backup vivo**: si un sistema de formacion o una sandbox se recrea, tu codigo esta a salvo en el repositorio.
-- **Colaboracion**: ramas, pull requests y revisiones, las mismas practicas que usa el resto de la industria.
+- **Backup vivo**: si un sistema de formación o una sandbox se recrea, tu código está a salvo en el repositorio.
+- **Colaboración**: ramas, pull requests y revisiones, las mismas prácticas que usa el resto de la industria.
 
 ## El plugin en ADT
 
-En ABAP Cloud y en on-premise moderno se usa el plugin de abapGit para ADT (Eclipse). Se instala desde `https://eclipse.abapgit.org/updatesite/` via **Help > Install New Software**, y aparece con dos vistas clave:
+En ABAP Cloud y en on-premise moderno se usa el plugin de abapGit para ADT (Eclipse). Se instala desde `https://eclipse.abapgit.org/updatesite/` vía **Help > Install New Software**, y aparece con dos vistas clave:
 
 ```text
 Window > Show View > Other... > abapGit
@@ -53,6 +53,6 @@ Window > Show View > Other... > abapGit
 
 Con eso ya tienes todo el ciclo Git dentro del IDE en el que ya trabajas, sin salir a una terminal.
 
-> El transporte te dice que cambio. Git te dice por que cambio, quien lo hizo y como deshacerlo. Esa diferencia es la que separa un desarrollo mantenible de un misterio arqueologico.
+> El transporte te dice qué cambió. Git te dice por qué cambió, quién lo hizo y cómo deshacerlo. Esa diferencia es la que separa un desarrollo mantenible de un misterio arqueológico.
 
-En los proximos posts entramos en el detalle: repos online frente a offline, la anatomia del `.abapgit.xml`, los flujos con ramas, y por que abapGit puede mover codigo entre sistemas sin tocar STMS.
+En los próximos posts entramos en el detalle: repos online frente a offline, la anatomía del `.abapgit.xml`, los flujos con ramas, y por qué abapGit puede mover código entre sistemas sin tocar STMS.

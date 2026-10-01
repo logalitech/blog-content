@@ -1,6 +1,6 @@
 ---
 title: "Eventos y hotspots en ALV: cuando el listado empieza a responder"
-description: "Hotspot, double-click, user command. La interaccion en ALV Grid va por eventos y handlers, no por callbacks sueltos. Vemos el patron con SET HANDLER y codigo ABAP real de un evento hotspot."
+description: "Hotspot, double-click, user command. La interacción en ALV Grid va por eventos y handlers, no por callbacks sueltos. Vemos el patrón con SET HANDLER y código ABAP real de un evento hotspot."
 pubDate: 2026-02-26
 author: "Logali Tech"
 tags: ["ABAP", "ALV", "eventos", "CL_GUI_ALV_GRID"]
@@ -10,11 +10,11 @@ lang: "es"
 translationKey: "alv-eventos-y-hotspots"
 ---
 
-Un listado que solo se mira es la mitad del trabajo. La otra mitad es responder al clic: navegar a un detalle, abrir un popup, disparar una accion. En ALV Grid eso se hace con **eventos y handlers**, no con subrutinas cableadas por nombre. Y ese es exactamente el motivo por el que el modelo orientado a objetos gana.
+Un listado que solo se mira es la mitad del trabajo. La otra mitad es responder al clic: navegar a un detalle, abrir un popup, disparar una acción. En ALV Grid eso se hace con **eventos y handlers**, no con subrutinas cableadas por nombre. Y ese es exactamente el motivo por el que el modelo orientado a objetos gana.
 
-## El patron: clase receptora + SET HANDLER
+## El patrón: clase receptora + SET HANDLER
 
-La interaccion en `CL_GUI_ALV_GRID` sigue siempre el mismo esquema: una clase local declara metodos `FOR EVENT ... OF cl_gui_alv_grid`, y tu enlazas esa clase al grid con `SET HANDLER`.
+La interacción en `CL_GUI_ALV_GRID` sigue siempre el mismo esquema: una clase local declara métodos `FOR EVENT ... OF cl_gui_alv_grid`, y tú enlazas esa clase al grid con `SET HANDLER`.
 
 ```abap
 CLASS lcl_event_receiver DEFINITION.
@@ -33,11 +33,11 @@ CLASS lcl_event_receiver DEFINITION.
 ENDCLASS.
 ```
 
-Cada evento entrega en `IMPORTING` justo lo que necesitas: la columna clicada, el numero de fila, el identificador de linea. Nada de leer variables globales para saber donde ha pinchado el usuario.
+Cada evento entrega en `IMPORTING` justo lo que necesitas: la columna clicada, el número de fila, el identificador de línea. Nada de leer variables globales para saber dónde ha pinchado el usuario.
 
 ## Enlazar los handlers
 
-Una vez creada la instancia receptora, `SET HANDLER` conecta cada metodo con el grid concreto. Se hace una sola vez, cuando el grid ya existe.
+Una vez creada la instancia receptora, `SET HANDLER` conecta cada método con el grid concreto. Se hace una sola vez, cuando el grid ya existe.
 
 ```abap
 FORM set_handlers .
@@ -60,9 +60,9 @@ flowchart TB
   A --> V["Detalle en pantalla"]
 ```
 
-## Un hotspot util: de fila a detalle
+## Un hotspot útil: de fila a detalle
 
-El hotspot convierte una celda en un enlace. Se marca en el catalogo de campos (`hotspot = abap_true`) y el evento hace el resto. Aqui, al pinchar la matricula de un vehiculo, buscamos su contrato de cliente y lo mostramos en un popup:
+El hotspot convierte una celda en un enlace. Se marca en el catálogo de campos (`hotspot = abap_true`) y el evento hace el resto. Aquí, al pinchar la matrícula de un vehículo, buscamos su contrato de cliente y lo mostramos en un popup:
 
 ```abap
 METHOD handle_hotspot_click.
@@ -98,12 +98,12 @@ METHOD handle_hotspot_click.
 ENDMETHOD.
 ```
 
-El `es_row_no-row_id` te da la fila exacta; el `READ TABLE ... INDEX` recupera el registro; y a partir de ahi es logica de negocio normal. El double-click funciona igual, pero recibe `e_column` y `e_row` en lugar de los `*_id`.
+El `es_row_no-row_id` te da la fila exacta; el `READ TABLE ... INDEX` recupera el registro; y a partir de ahí es lógica de negocio normal. El double-click funciona igual, pero recibe `e_column` y `e_row` en lugar de los `*_id`.
 
 ## El detalle que salva depuraciones
 
-Un handler enlazado que nunca se dispara casi siempre tiene la misma causa: el `SET HANDLER` se ejecuto antes de existir el grid, o se registro para la instancia equivocada. El evento va ligado a un objeto concreto (`FOR go_alv_grid`), no a la clase en abstracto.
+Un handler enlazado que nunca se dispara casi siempre tiene la misma causa: el `SET HANDLER` se ejecutó antes de existir el grid, o se registró para la instancia equivocada. El evento va ligado a un objeto concreto (`FOR go_alv_grid`), no a la clase en abstracto.
 
-> Los eventos no son magia: son un contrato tipado entre el control y tu codigo. Si respetas el contrato, la interaccion se vuelve trivial.
+> Los eventos no son magia: son un contrato tipado entre el control y tu código. Si respetas el contrato, la interacción se vuelve trivial.
 
-En el proximo post: la barra de herramientas y las funciones propias, para que el usuario tenga botones que hacen lo que tu negocio necesita.
+En el próximo post: la barra de herramientas y las funciones propias, para que el usuario tenga botones que hacen lo que tu negocio necesita.

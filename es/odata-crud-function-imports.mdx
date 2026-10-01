@@ -1,6 +1,6 @@
 ---
 title: "CRUD y Function Imports en OData: cuando el CRUD no basta"
-description: "Create, Read, Update, Delete cubren el 90 por ciento de un servicio OData. El otro 10 por ciento son acciones que no son ni crear ni leer: ahi entran los Function Imports. Como distinguirlos y no meter logica donde no toca."
+description: "Create, Read, Update, Delete cubren el 90 por ciento de un servicio OData. El otro 10 por ciento son acciones que no son ni crear ni leer: ahí entran los Function Imports. Cómo distinguirlos y no meter lógica donde no toca."
 pubDate: 2026-04-12
 author: "Logali Tech"
 tags: ["ABAP", "OData", "CRUD", "Function Import"]
@@ -42,10 +42,10 @@ Un Function Import es una operación con nombre propio, con parámetros de entra
 
 ```mermaid
 flowchart TD
- A["Necesito exponer una operacion"] --> B["Es crear, leer, actualizar o borrar una entidad?"]
- B -->|"Si"| C["Metodo CRUD estandar en la DPC_EXT"]
- B -->|"No: es una accion o un calculo"| D["Function Import"]
- D --> E["Define parametros de entrada y tipo de retorno en el modelo"]
+ A["Necesito exponer una operación"] --> B["¿Es crear, leer, actualizar o borrar una entidad?"]
+ B -->|"Sí"| C["Método CRUD estándar en la DPC_EXT"]
+ B -->|"No: es una acción o un cálculo"| D["Function Import"]
+ D --> E["Define parámetros de entrada y tipo de retorno en el modelo"]
  E --> F["Implementa en execute_action de la DPC_EXT"]
  C --> G["Servicio consistente"]
  F --> G
@@ -57,7 +57,7 @@ En SEGW defines el Function Import en el modelo (nombre, parámetros, tipo de re
 
 Meter lógica de negocio dentro del CRUD porque "es más rápido". Un GET que además dispara un cálculo, un CREATE que además manda un correo. Funciona el primer día y te condena después: un cliente que solo quería leer acaba provocando efectos colaterales que nadie espera de un GET.
 
-Ademas, hay operaciones que ni CRUD ni Function Import cubren bien: las **deep entity**, donde creas o lees una cabecera con sus posiciones en una sola llamada (por ejemplo un cliente con sus pedidos). Esas tienen su propio par de métodos, y merecen su propio post.
+Además, hay operaciones que ni CRUD ni Function Import cubren bien: las **deep entity**, donde creas o lees una cabecera con sus posiciones en una sola llamada (por ejemplo un cliente con sus pedidos). Esas tienen su propio par de métodos, y merecen su propio post.
 
 > El CRUD no es una obligación de meterlo todo dentro. Es un contrato: si la operación no es una de las cuatro letras, no la disfraces de CRUD. Dale su Function Import y que el servicio siga siendo legible.
 

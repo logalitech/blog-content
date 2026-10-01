@@ -1,6 +1,6 @@
 ---
 title: "Expresiones SQL en ABAP: deja que la base calcule por ti"
-description: "CASE, aritmetica y funciones dentro del SELECT. Todo lo que resuelvas en la sentencia es cálculo que no sube a ABAP. Con código real de CASE, CAST, DIVISION, ROUND y funciones de cadena."
+description: "CASE, aritmética y funciones dentro del SELECT. Todo lo que resuelvas en la sentencia es cálculo que no sube a ABAP. Con código real de CASE, CAST, DIVISION, ROUND y funciones de cadena."
 pubDate: 2026-02-15
 author: "Logali Tech"
 tags: ["ABAP", "ABAP SQL", "CASE", "Code Pushdown"]
@@ -71,9 +71,9 @@ El operador `&&` concatena operandos adyacentes; ojo, recorta espacios finales y
 
 ```mermaid
 flowchart TD
- A["Columnas crudas"] --> B["Donde calculo?"]
+ A["Columnas crudas"] --> B["¿Dónde calculo?"]
  B -->|"En ABAP"| C["LOOP + IF + sumas datos suben enteros"]
- B -->|"En la sentencia"| D["CASE + aritmetica + funciones"]
+ B -->|"En la sentencia"| D["CASE + aritmética + funciones"]
  D --> E["Sube solo el resultado"]
  C --> F["Sube todo y calculas dos veces"]
 ```

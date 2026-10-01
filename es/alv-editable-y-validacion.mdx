@@ -1,6 +1,6 @@
 ---
-title: "ALV editable: edicion y validacion sin dramas"
-description: "Cuando el usuario escribe en la celda, empieza tu responsabilidad. data_changed para validar, F4 para ayudas, y persistir con user command. El grid editable con codigo ABAP real."
+title: "ALV editable: edición y validación sin dramas"
+description: "Cuando el usuario escribe en la celda, empieza tu responsabilidad. data_changed para validar, F4 para ayudas, y persistir con user command. El grid editable con código ABAP real."
 pubDate: 2026-03-03
 author: "Logali Tech"
 tags: ["ABAP", "ALV", "editable", "CL_GUI_ALV_GRID"]
@@ -10,11 +10,11 @@ lang: "es"
 translationKey: "alv-editable-y-validacion"
 ---
 
-Aqui es donde `CL_SALV_TABLE` se queda corto y hay que bajar a `CL_GUI_ALV_GRID`. Un ALV editable no es solo poner celdas en modo escritura: es **validar lo que el usuario teclea, ofrecerle ayudas y persistir solo lo correcto**. Y todo eso pasa por eventos. Vamos al patron real.
+Aquí es donde `CL_SALV_TABLE` se queda corto y hay que bajar a `CL_GUI_ALV_GRID`. Un ALV editable no es solo poner celdas en modo escritura: es **validar lo que el usuario teclea, ofrecerle ayudas y persistir solo lo correcto**. Y todo eso pasa por eventos. Vamos al patrón real.
 
 ## Validar al vuelo: el evento data_changed
 
-Cada vez que el usuario modifica una celda, el grid dispara `data_changed`. Ahi recorres las celdas cambiadas (`mt_good_cells`), lees el valor y decides si es valido. Si no lo es, no lanzas un dump: registras el error en el protocolo del propio ALV.
+Cada vez que el usuario modifica una celda, el grid dispara `data_changed`. Ahí recorres las celdas cambiadas (`mt_good_cells`), lees el valor y decides si es válido. Si no lo es, no lanzas un dump: registras el error en el protocolo del propio ALV.
 
 ```abap
 METHOD handle_data_changed.
@@ -50,7 +50,7 @@ METHOD handle_data_changed.
 ENDMETHOD.
 ```
 
-`add_protocol_entry` es la pieza clave: marca la celda en rojo y muestra el mensaje en el protocolo estandar del ALV, sin sacar al usuario del contexto. La marca no existe en `zco_marcas` -> error visible, edicion no confirmada.
+`add_protocol_entry` es la pieza clave: marca la celda en rojo y muestra el mensaje en el protocolo estándar del ALV, sin sacar al usuario del contexto. La marca no existe en `zco_marcas` -> error visible, edición no confirmada.
 
 ```mermaid
 flowchart TB
@@ -61,9 +61,9 @@ flowchart TB
   OK --> DCF["data_changed_finished - marca fila como modificada"]
 ```
 
-## Ayuda de busqueda propia: el evento onf4
+## Ayuda de búsqueda propia: el evento onf4
 
-Para las celdas editables conviene ofrecer una F4 a medida. Se declara la columna con `f4availabl = abap_true` en el catalogo y se implementa `onf4`, que rellena los valores y los devuelve al grid via `er_event_data`:
+Para las celdas editables conviene ofrecer una F4 a medida. Se declara la columna con `f4availabl = abap_true` en el catálogo y se implementa `onf4`, que rellena los valores y los devuelve al grid vía `er_event_data`:
 
 ```abap
 METHOD handle_onf4.
@@ -99,11 +99,11 @@ METHOD handle_onf4.
 ENDMETHOD.
 ```
 
-No olvides el `er_event_data->m_event_handled = abap_true`: le dice al grid que tu ya has gestionado la F4 y que no aplique la estandar.
+No olvides el `er_event_data->m_event_handled = abap_true`: le dice al grid que tú ya has gestionado la F4 y que no aplique la estándar.
 
 ## Persistir solo lo bueno
 
-Marcas las filas tocadas en `data_changed_finished` (con un flag propio, aqui `bbdd`), y al pulsar "Guardar" recorres solo esas y haces `MODIFY`:
+Marcas las filas tocadas en `data_changed_finished` (con un flag propio, aquí `bbdd`), y al pulsar "Guardar" recorres solo esas y haces `MODIFY`:
 
 ```abap
 WHEN 'A_SAVE'.
@@ -119,6 +119,6 @@ WHEN 'A_SAVE'.
   ENDIF.
 ```
 
-> Un ALV editable sin validacion en data_changed no es una comodidad: es una via directa para meter basura en la base de datos.
+> Un ALV editable sin validación en data_changed no es una comodidad: es una vía directa para meter basura en la base de datos.
 
-En el proximo post cerramos la serie con lo que sostiene todo esto: el catalogo de campos, el layout y las variantes que el usuario guarda y espera reencontrar.
+En el próximo post cerramos la serie con lo que sostiene todo esto: el catálogo de campos, el layout y las variantes que el usuario guarda y espera reencontrar.
