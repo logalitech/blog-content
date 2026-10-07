@@ -102,7 +102,7 @@ service CatalogService {
 annotate CatalogService with @mcp.instructions: 'Catálogo de productos de un almacén de demostración. Usa describe para conocer las entidades y query para consultar productos, categorías y niveles de stock. Un producto tiene stock bajo cuando stock < stockMinimo.';
 ```
 
-La única línea nueva respecto a un servicio CAP normal es `@protocol: ['odata', 'mcp']`. Con ella, el servicio se publica por MCP en `/mcp/<servicio>` además de por OData. La anotación `@mcp.instructions` es opcional: su texto llega al agente como instrucciones del servidor en la inicialización del protocolo, lo que se comprobó en la respuesta a `initialize`.
+La única línea nueva respecto a un servicio CAP normal es `@protocol: ['odata', 'mcp']`. Con ella, el servicio se publica por MCP bajo el prefijo `/mcp/` (aquí, `/mcp/catalog`), además de por OData. La anotación `@mcp.instructions` es opcional: su texto llega al agente como instrucciones del servidor en la inicialización del protocolo, lo que se comprobó en la respuesta a `initialize`.
 
 ### Arranque
 
