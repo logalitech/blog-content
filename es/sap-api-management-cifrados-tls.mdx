@@ -40,6 +40,8 @@ La compatibilidad restante incluye:
 
 Es decir, el problema no es “TLS 1.2 en general”, sino una combinación concreta que ya no está en la lista admitida.
 
+En resumen, SAP está retirando dos suites DHE de TLS 1.2 para inbound. El cambio no afecta a “TLS 1.2” en general, sino a una combinación concreta que deja de ser aceptada.
+
 ![Diagrama de la rotación de cipher suites TLS para SAP API Management: clientes y servidor negocian el handshake antes del tráfico HTTP.](/images/blog/sap-api-management-cifrados-tls-01.jpg)
 
 ## A quién afecta y a quién no
@@ -54,6 +56,8 @@ En la práctica, la principal franja de riesgo es esta:
 - navegadores o clientes muy desactualizados que tienen un perfil TLS antiguo.
 
 Si el entorno ya usa TLS 1.3, o soporta una de las suites de ECDHE que quedan activas, no debería verse afectado.
+
+La compatibilidad que queda activa se centra en ECDHE y en TLS 1.3. Si un cliente solo ofrece las suites retiradas, el handshake falla antes de llegar al backend y la conexión queda bloqueada.
 
 ![Comparativa de cipher suites TLS 1.2 y TLS 1.3, con los cifrados DHE retirados y los ECDHE que quedan compatibles.](/images/blog/sap-api-management-cifrados-tls-02.png)
 
@@ -87,6 +91,8 @@ En soluciones basadas en navegador, especialmente para Developer Portal o flujos
 ### SAP Cloud Integration y otros componentes de Integration Suite
 
 Aquí la recomendación es confirmar que el componente saliente soporte los cipher suites que siguen activos. Si hay problemas, toca revisar el perfil TLS outbound del componente y verificar no haya una configuración demasiado antigua.
+
+La buena noticia es que el impacto se puede anticipar. La revisión práctica no es complicada: identificar los clientes inbound, comprobar qué cipher suites ofrecen y validar qué perfiles siguen siendo compatibles.
 
 ![Checklist de revisión para clientes Java, SAP Private Cloud, SAP Cloud Integration y navegadores antes del cambio.](/images/blog/sap-api-management-cifrados-tls-03.jpg)
 
