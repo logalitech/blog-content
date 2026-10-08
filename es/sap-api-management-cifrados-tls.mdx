@@ -22,6 +22,8 @@ Con el paso del tiempo, algunas combinaciones quedaron obsoletas por motivos de 
 
 La clave aquí no es solo “TLS 1.2 o TLS 1.3”, sino qué suites quedan dentro de cada versión. En este caso, lo importante es que SAP API Management retira dos cipher suites de TLS 1.2 para comunicaciones inbound.
 
+![Diagrama de la rotación de cipher suites TLS para SAP API Management: clientes y servidor negocian el handshake antes del tráfico HTTP.](/images/blog/sap-api-management-cifrados-tls-01.jpg)
+
 ## Qué cambia en SAP API Management
 
 La nota técnica de SAP KBA 3797056 explica que se eliminan estas dos cipher suites de TLS 1.2 para la comunicación inbound hacia SAP API Management:
@@ -41,8 +43,6 @@ La compatibilidad restante incluye:
 Es decir, el problema no es “TLS 1.2 en general”, sino una combinación concreta que ya no está en la lista admitida.
 
 En resumen, SAP está retirando dos suites DHE de TLS 1.2 para inbound. El cambio no afecta a “TLS 1.2” en general, sino a una combinación concreta que deja de ser aceptada.
-
-![Diagrama de la rotación de cipher suites TLS para SAP API Management: clientes y servidor negocian el handshake antes del tráfico HTTP.](/images/blog/sap-api-management-cifrados-tls-01.jpg)
 
 ## A quién afecta y a quién no
 
