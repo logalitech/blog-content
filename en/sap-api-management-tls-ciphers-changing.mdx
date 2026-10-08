@@ -1,5 +1,5 @@
 ---
-# origen: es/sap-api-management-cifrados-tls.mdx@ded1a43831bbf2abf322cedb54f638deeb4c9003 (versión generada desde el artículo en español; no editar este fichero)
+# origen: es/sap-api-management-cifrados-tls.mdx@3d55b85e8d1a6f4455624954782a1ee78530ac16 (versión generada desde el artículo en español; no editar este fichero)
 title: "SAP API Management: how TLS ciphers are changing"
 description: "SAP API Management retires two TLS 1.2 cipher suites for inbound connections. How it affects your integrations and what to review before October 2026."
 pubDate: 2026-10-08
@@ -10,15 +10,15 @@ draft: false
 lang: "en"
 translationKey: "sap-api-management-cifrados-tls"
 ---
-The security of an integration is usually not noticed until it breaks. That is exactly what can happen with the TLS ciphers that SAP API Management uses to accept incoming connections. If your environment still relies on one of the combinations that SAP is going to retire, the failure can occur before the system even gets to execute your business logic: the TLS handshake fails before HTTP.
+The security of an integration often goes unnoticed until it breaks. That is exactly what can happen with the TLS ciphers that SAP API Management uses to accept incoming connections. If your environment still relies on one of the combinations that SAP is going to retire, the failure can occur before the system even executes your business logic: the TLS handshake fails before HTTP.
 
-That is why it is worth reviewing it in good time. In this installment we will look at what changes, which types of clients are affected and what you should review before the change reaches your datacenter.
+That is why it is worth reviewing in good time. In this installment we will look at what changes, which types of clients are affected and what you should review before the change reaches your datacenter.
 
 ## What TLS is and why it changes
 
 TLS (Transport Layer Security) is the protocol that encrypts communication between two systems. Before exchanging a request or a response, client and server agree on how they will protect that connection. That negotiation is called the handshake, and the algorithms used to protect it are grouped into what are known as cipher suites.
 
-Over time, some combinations became obsolete for security reasons. TLS 1.3 left a more modern, reduced set, and both SAP and other platforms are phasing out the old suites that remain available for compatibility.
+Over time, some combinations became obsolete for security reasons. TLS 1.3 left a more modern and reduced set, and both SAP and other platforms are phasing out the old suites that remain available for compatibility.
 
 The key here is not just "TLS 1.2 or TLS 1.3", but which suites remain within each version. In this case, what matters is that SAP API Management is retiring two TLS 1.2 cipher suites for inbound communications.
 
@@ -42,7 +42,7 @@ The remaining compatibility includes:
 
 In other words, the problem is not "TLS 1.2 in general", but a specific combination that is no longer on the allowed list.
 
-In summary, SAP is retiring two DHE suites from TLS 1.2 for inbound. The change does not affect "TLS 1.2" in general, but a specific combination that is no longer accepted.
+In short, SAP is retiring two DHE suites from TLS 1.2 for inbound. The change does not affect "TLS 1.2" in general, but a specific combination that is no longer accepted.
 
 ## Who is affected and who is not
 
@@ -52,22 +52,20 @@ In practice, the main risk area is this:
 
 - external clients or integrations that still only support TLS 1.2 with DHE;
 - old or misconfigured Java systems;
-- environments with a very restrictive TLS policy or with `jdk.tls.disabledAlgorithms` blocking recent suites due to human error;
+- environments with a very restrictive TLS policy or with `jdk.tls.disabledAlgorithms` blocking recent cipher suites due to human error;
 - very outdated browsers or clients that have an old TLS profile.
 
-If the environment already uses TLS 1.3, or supports one of the ECDHE suites that remain active, it should not be affected.
+If the environment already uses TLS 1.3, or supports one of the ECDHE cipher suites that remain active, it should not be affected.
 
-The compatibility that remains active focuses on ECDHE and TLS 1.3. If a client only offers the retired suites, the handshake fails before reaching the backend and the connection is blocked.
+The compatibility that remains active centers on ECDHE and TLS 1.3. If a client only offers the retired cipher suites, the handshake fails before reaching the backend and the connection is blocked.
 
-![Comparison of TLS 1.2 and TLS 1.3 cipher suites, with the retired DHE ciphers and the ECDHE ones that remain compatible.](/images/blog/sap-api-management-cifrados-tls-02.png)
-
-## What should be reviewed before the change
+## What to review before the change
 
 The good news is that the impact can be anticipated. A practical approach is to classify the client according to the type of integration:
 
 ### SAP Public Cloud systems
 
-They usually do not require any action from the customer. SAP manages the service side and the TLS profile of the runtime.
+They usually do not require any action on the customer's side. SAP manages the service side and the TLS profile of the runtime.
 
 ### SAP Private Cloud
 
@@ -92,9 +90,9 @@ In browser-based solutions, especially for Developer Portal or OAuth flows, the 
 
 Here the recommendation is to confirm that the outbound component supports the cipher suites that remain active. If there are problems, you need to review the component's outbound TLS profile and verify that there is no overly old configuration.
 
-The good news is that the impact can be anticipated. The practical review is not complicated: identify the inbound clients, check which cipher suites they offer and validate which profiles remain compatible.
+The good news is that the impact can be anticipated. The practical review is not complicated: identify the inbound clients, check which cipher suites they offer and validate which profiles are still compatible.
 
-![Review checklist for Java clients, SAP Private Cloud, SAP Cloud Integration and browsers before the change.](/images/blog/sap-api-management-cifrados-tls-03.jpg)
+![Review checklist for Java clients, SAP Private Cloud, SAP Cloud Integration and browsers before the change.](/images/blog/sap-api-management-cifrados-tls-02.jpg)
 
 ## Dates and continuity plan
 
@@ -110,9 +108,9 @@ As an operational recommendation, the logical plan is:
 
 ## How to test it without touching production data
 
-Best practice is not to wait for the connection to fail in production. The sensible approach is to test the client's behavior with a controlled, reproducible endpoint.
+Best practice is not to wait for the connection to fail in production. The sensible approach is to test the client's behavior against a controlled, reproducible endpoint.
 
-SAP already publishes a test endpoint that allows you to validate the TLS profile after the change:
+SAP already publishes a test endpoint that lets you validate the TLS profile after the change:
 
 ```text
 https://dhecipherremoved.apimanagement.hana.ondemand.com
@@ -126,7 +124,7 @@ openssl s_client -connect dhecipherremoved.apimanagement.hana.ondemand.com:443 -
 openssl s_client -connect dhecipherremoved.apimanagement.hana.ondemand.com:443 -tls1_3
 ```
 
-The expected results are not a given in this article because that check must be done in the client's environment. What matters here is the logic: a connection that only offers the removed DHE sockets will fail the handshake; a connection with ECDHE or TLS 1.3 will pass it.
+The expected results are not a data point in this article because that check must be done in the customer's environment. What matters here is the logic: a connection that only offers the removed DHE sockets will fail the handshake; a connection with ECDHE or TLS 1.3 will pass it.
 
 ## Practical recommendation
 
@@ -139,6 +137,6 @@ For any organization that uses API Management, the recommendation is simple:
 - validate Java clients, cloud integrations and external services;
 - prepare a compatibility test before the date for each datacenter.
 
-Modern services and clients are already heading in the right direction. The real risk lies in systems that continue to operate with an old "compatibility" TLS policy and have never reviewed which combinations are still accepted.
+Modern services and clients are already heading in the right direction. The real risk lies in systems that are still running with an old "compatibility" TLS policy and have never reviewed which combinations are still being accepted.
 
 > Source: SAP KBA 3797056, "TLS Cipher Disablement for Inbound Communication to SAP API Management".
