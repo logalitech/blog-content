@@ -40,6 +40,8 @@ La compatibilidad restante incluye:
 
 Es decir, el problema no es “TLS 1.2 en general”, sino una combinación concreta que ya no está en la lista admitida.
 
+![Diagrama de la rotación de cipher suites TLS para SAP API Management: clientes y servidor negocian el handshake antes del tráfico HTTP.](/images/blog/sap-api-management-cifrados-tls-01.jpg)
+
 ## A quién afecta y a quién no
 
 La diferencia más importante es que el cambio afecta a la comunicación inbound: la conexión que inicia el cliente hacia API Management. No afecta a la comunicación outbound desde API Management hacia backends, ni a los escenarios que usan Cloud Connector, ni a sistemas SAP Cloud que ya aceptan cifrados modernos.
@@ -52,6 +54,8 @@ En la práctica, la principal franja de riesgo es esta:
 - navegadores o clientes muy desactualizados que tienen un perfil TLS antiguo.
 
 Si el entorno ya usa TLS 1.3, o soporta una de las suites de ECDHE que quedan activas, no debería verse afectado.
+
+![Comparativa de cipher suites TLS 1.2 y TLS 1.3, con los cifrados DHE retirados y los ECDHE que quedan compatibles.](/images/blog/sap-api-management-cifrados-tls-02.png)
 
 ## Qué se debe revisar antes del cambio
 
@@ -83,6 +87,8 @@ En soluciones basadas en navegador, especialmente para Developer Portal o flujos
 ### SAP Cloud Integration y otros componentes de Integration Suite
 
 Aquí la recomendación es confirmar que el componente saliente soporte los cipher suites que siguen activos. Si hay problemas, toca revisar el perfil TLS outbound del componente y verificar no haya una configuración demasiado antigua.
+
+![Checklist de revisión para clientes Java, SAP Private Cloud, SAP Cloud Integration y navegadores antes del cambio.](/images/blog/sap-api-management-cifrados-tls-03.jpg)
 
 ## Fechas y plan de continuidad
 
@@ -130,9 +136,3 @@ Para cualquier organización que use API Management, la recomendación es simple
 Los servicios y clientes modernos ya apuntan en la dirección correcta. El riesgo real está en los sistemas que siguen operando con una política TLS “de compatibilidad” antigua y nunca revisaron qué mezclas se siguen aceptando.
 
 > Fuente: SAP KBA 3797056, “TLS Cipher Disablement for Inbound Communication to SAP API Management”.
-
-![Diagrama de la rotación de cipher suites TLS para SAP API Management: clientes y servidor negocian el handshake antes del tráfico HTTP.](/images/blog/sap-api-management-cifrados-tls-01.jpg)
-
-![Comparativa de cipher suites TLS 1.2 y TLS 1.3, con los cifrados DHE retirados y los ECDHE que quedan compatibles.](/images/blog/sap-api-management-cifrados-tls-02.png)
-
-![Checklist de revisión para clientes Java, SAP Private Cloud, SAP Cloud Integration y navegadores antes del cambio.](/images/blog/sap-api-management-cifrados-tls-03.jpg)
