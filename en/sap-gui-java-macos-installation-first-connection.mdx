@@ -1,8 +1,9 @@
 ---
-# origen: es/sap-gui-java-macos-instalacion.mdx@73cd822a73ffa3464e324291a7f3e159ba137051 (versión generada desde el artículo en español; no editar este fichero)
+# origen: es/sap-gui-java-macos-instalacion.mdx@848688ec204ccfd26c4323275bbe0839c3b5c057 (versión generada desde el artículo en español; no editar este fichero)
 title: "SAP GUI for Java on macOS: installation and first connection"
 description: "SAP GUI for Java 8.10 on a Mac with an M processor: the Java it already ships with, the three ways to connect and why the System tab is no use with just a host."
 pubDate: 2026-10-09
+updatedDate: 2026-10-09
 author: "Petru Pop"
 tags: ["SAP GUI", "SAP GUI for Java", "macOS"]
 category: "SAP GUI"
@@ -10,7 +11,7 @@ draft: false
 lang: "en"
 translationKey: "sap-gui-java-macos-instalacion"
 ---
-On a Mac, the client for working with an SAP system is **SAP GUI for Java**. Downloading and installing it takes just a few minutes. What really takes effort is the first connection: the administrator provides a host, the **System** tab asks for a system and a group, and there is no way to make one fit with the other.
+On a Mac, the client for working with an SAP system is **SAP GUI for Java**. Downloading and installing it takes only a few minutes. What really takes effort is the first connection: the administrator provides a host, the **System** tab asks for a system and a group, and there is no way to make one fit with the other.
 
 This article covers a real installation from start to finish. It explains why there is no need to install Java, what the three ways SAP GUI for Java has of addressing a system are and which one corresponds to each situation, and how to diagnose the network when the connection does not respond.
 
@@ -18,7 +19,7 @@ This article covers a real installation from start to finish. It explains why th
 
 | Item | Value |
 |---|---|
-| Computer | Mac with M series processor (ARM64) |
+| Computer | Mac with an M series processor (ARM64) |
 | Operating system | macOS Tahoe 26.6.2 |
 | Installed version | SAP GUI for Java 8.10, patch 14 |
 | File | `platingui_inst_810_14-80009301.dmg` |
@@ -28,19 +29,19 @@ This article covers a real installation from start to finish. It explains why th
 
 Before you start, you need:
 
-- an SAP for Me user (S-user) with **Software Download** authorization: as the portal itself states, you request it from your company's user administrator;
+- an SAP for Me user (S-user) with the **Software Download** authorization: as the portal itself states, you request it from your company's user administrator;
 - the system connection data, which the administrator provides (in this case, the application server host and the instance number);
 - VPN access, if the system is not reachable from outside the company network.
 
 ## Step 1. Download SAP GUI for Java from SAP for Me
 
-In [Software Downloads](https://support.sap.com/en/my-support/software-downloads.html) on SAP Support, the **Software Downloads in SAP for Me** button leads to the SAP ID login. Inside SAP for Me, the search box finds the component when you type `sap gui for java`. When you expand it, the available version appears, **SAP GUI FOR JAVA 8.10**.
+In [Software Downloads](https://support.sap.com/en/my-support/software-downloads.html) in SAP Support, the **Software Downloads in SAP for Me** button leads to the SAP ID login. Inside SAP for Me, the search engine finds the component when you type `sap gui for java`. When you expand it, the available version appears, **SAP GUI FOR JAVA 8.10**.
 
-![SAP for Me search box with the SAP GUI FOR JAVA component and its version 8.10](/images/blog/sap-gui-java-macos-instalacion-01-buscar-sap-gui-java.png)
+![SAP for Me search engine with the SAP GUI FOR JAVA component and its version 8.10](/images/blog/sap-gui-java-macos-instalacion-01-buscar-sap-gui-java.png)
 
-On the **DOWNLOADS** tab for the version, the platform dropdown offers four options: LINUX ON X86_64 64BIT, MACOS ON ARM64 64BIT, MACOS ON X86_64 64BIT and WINDOWS ON X64 64BIT. For a Mac with an M-series processor, choose **MACOS ON ARM64 64BIT**.
+On the **DOWNLOADS** tab of the version, the platform dropdown offers four options: LINUX ON X86_64 64BIT, MACOS ON ARM64 64BIT, MACOS ON X86_64 64BIT and WINDOWS ON X64 64BIT. For a Mac with an M-series processor, you select **MACOS ON ARM64 64BIT**.
 
-The list shows, for each patch, a `.jar` file and a `.dmg` file. Download the `.dmg` of the most recent patch: `platingui_inst_810_14-80009301.dmg`, patch 14, 318623 KB, published on 18.09.2026.
+The list shows, for each patch, a `.jar` file and a `.dmg` file. You download the `.dmg` of the most recent patch: `platingui_inst_810_14-80009301.dmg`, patch 14, 318623 KB, published on 18.09.2026.
 
 ![Download list for SAP GUI for Java 8.10 with the MACOS ON ARM64 64BIT platform selected](/images/blog/sap-gui-java-macos-instalacion-02-plataforma-macos-arm64.png)
 
@@ -51,10 +52,10 @@ When you click the file, the download does not start: Safari's address bar shows
 To allow it:
 
 1. **Safari** menu, **Settings…**
-2. **Websites** tab, **Pop-up windows** section.
+2. **Websites** tab, **Pop-ups** section.
 3. For `me.sap.com`, change **Block and Notify** to **Allow**.
 
-![Safari settings, Pop-up windows section, with the Allow option for me.sap.com](/images/blog/sap-gui-java-macos-instalacion-03-safari-ventanas-emergentes.png)
+![Safari settings, Pop-ups section, with the Allow option for me.sap.com](/images/blog/sap-gui-java-macos-instalacion-03-safari-ventanas-emergentes.png)
 
 When you repeat the download, Safari asks whether to allow downloads from `me.sap.com` and `launchpad.support.sap.com`. Answer **Allow**. The downloaded file is 326.3 MB.
 
@@ -68,9 +69,9 @@ When you open the DMG, the installer window appears, **SAP NetWeaver, SAP GUI fo
 
 The application ends up in `/Applications/SAP Clients/SAPGUI 8.10rev14/` under the name **SAPGUI 8.10rev14**, and you can open it from Spotlight.
 
-## No need to install Java: SAP GUI brings its own
+## You do not need to install Java: SAP GUI brings its own
 
-SAP GUI for Java is a Java application, and it is easy to assume that Java must first be installed on the Mac. In this installation that was not necessary: the DMG worked with no further steps. The reason lies within the application itself, which includes its own Java runtime environment:
+SAP GUI for Java is a Java application, and it is easy to assume that Java must first be installed on the Mac. In this installation that was not necessary: the DMG worked with no further steps. The reason lies inside the application itself, which includes its own Java runtime environment:
 
 ```bash
 grep JAVA_VERSION "/Applications/SAP Clients/SAPGUI 8.10rev14/SAPGUI 8.10rev14.app/Contents/Resources/jre/Contents/Home/release"
@@ -111,7 +112,7 @@ Before creating the connection, it is worth understanding what SAP GUI for Java 
 All three end at an application server, which is where the work is done. The difference lies in who decides which one the user connects to:
 
 - **Simple:** the user connects directly to a specific application server.
-- **Message server:** SAP GUI asks the system's message server, which distributes users among the application servers in the specified group.
+- **Message server:** SAP GUI asks the system's message server, which distributes users among the application servers of the specified group.
 - **Symbolic name:** SAP GUI looks up the system name in the Message Server List, a text file that translates each name into the address of its message server, and then continues as in the previous form.
 
 ```mermaid
@@ -126,29 +127,29 @@ flowchart TB
   E --> F
 ```
 
-## Why the System tab is no good with just one host
+## Why the System tab is no good with only a host
 
 The first window of SAP GUI for Java shows the **JavaGUI Services** folder empty. The new connection button, next to **Connect**, opens the **Connection Properties**.
 
 ![Initial window of SAP GUI for Java with the JavaGUI Services folder empty and the new connection button](/images/blog/sap-gui-java-macos-instalacion-06-lista-conexiones-vacia.png)
 
-The obvious solution is to fill in the first tab, **System**. Its required fields are **System** and **Group/Server**; the **Message Server** field appears grayed out, with no way to type in it.
+The obvious solution is to fill in the first tab, **System**. Its required fields are **System** and **Group/Server**; the **Message Server** field appears greyed out, with no way to type in it.
 
-![System tab of the connection properties with the required fields System and Group/Server and the message server grayed out](/images/blog/sap-gui-java-macos-instalacion-07-pestana-sistema.png)
+![System tab of the connection properties with the required System and Group/Server fields and the message server greyed out](/images/blog/sap-gui-java-macos-instalacion-07-pestana-sistema.png)
 
 Compared with the previous table, this tab corresponds to the **symbolic name** form: it asks for the system name and the logon group. With only the application server host there is no way to fill it in: the logon group is unknown, and the symbolic form also requires the system to appear in a Message Server List.
 
-The administrator's piece of information corresponds to the **simple form**, and that form has no tab of its own: you type it in by hand.
+The administrator's piece of information corresponds to the **simple form**, and that form has no tab of its own: it is typed by hand.
 
 ## Step 4. Write the connection string in expert mode
 
 The connection with the simple form is created like this:
 
 1. In the initial window, click the new connection button, next to **Connect**.
-2. In **Description**, type a name to recognize the connection in the list.
+2. In **Description**, enter a name to recognize the connection in the list.
 3. Open the **Advanced** tab.
 4. Select **Expert mode**.
-5. In the text box, type the connection string with the application server host and port: `conn=/H/<host>/S/3200` for instance 00.
+5. In the text box, enter the connection string with the application server host and port: `conn=/H/<host>/S/3200` for instance 00.
 6. Check that the lower box shows **All parameters valid**.
 7. Click **Save**.
 
@@ -174,11 +175,11 @@ The validation confirms the string with the message **All parameters valid**.
 
 One consequence of expert mode: when you later edit a connection created this way, you can only open the **Advanced** tab. The connection string becomes the only definition of the connection.
 
-Typing this string was the step that took the longest in the test, even though it only contains the host and the port.
+Entering this string was the step that took the most time in the test, even though it only contains the host and the port.
 
 ## Diagnosing the network with nc
 
-When the connection does not respond, it helps to separate two problems: whether the Mac can reach the server and whether the port is the correct one. For the first, `nc` from the macOS Terminal is useful:
+When the connection does not respond, it helps to separate two problems: whether the Mac can reach the server and whether the port is the right one. For the first, `nc` from the macOS Terminal is useful:
 
 ```bash
 nc -vz <host> 3200
@@ -190,9 +191,9 @@ These are the three results obtained in the test:
 |---|---|---|
 | VPN connected, port 3200 | `Connection to <host> port 3200 [tcp/tick-port] succeeded!` | There is network and the port is open |
 | VPN disconnected, port 3200 | No response; the command keeps waiting and you have to stop it with Control+C | There is no network to the server |
-| VPN connected, port 3201 | `succeeded!` | The port is open, but that does not make it the correct one |
+| VPN connected, port 3201 | `succeeded!` | The port is open, but that does not make it the right one |
 
-The third case is the important one. With port 3201, `nc` reports that the connection opens, but SAP GUI rejects it on connecting: 3201 would correspond to instance 01, which is not the one for the system. **`nc` checks the network, not the correct port.** The instance number is provided by the administrator, and the port is obtained from it with the `32NN` rule.
+The third case is the important one. With port 3201, `nc` reports that the connection opens, but SAP GUI rejects it on connecting: 3201 would correspond to instance 01, which is not the one for the system. **`nc` checks the network, not the correct port.** The instance number is provided by the administrator, and the port is derived from it with the rule `32NN`.
 
 ## Step 5. First connection
 
@@ -213,15 +214,8 @@ After the copyright notice, the system displays **SAP Easy Access**: the install
 | Obstacle | Solution |
 |---|---|
 | Safari blocks the download window | Allow pop-ups and downloads on `me.sap.com` |
-| Doubt about whether to install Java | Not needed: SAP GUI comes with its own Java 21 |
+| Doubt about whether to install Java | Not necessary: SAP GUI comes with its own Java 21 |
 | The System tab asks for system and group | It corresponds to `/R/`; with only a host, the simple form is used |
 | The connection string is rejected | Start with `/H/`, `/M/` or `/R/` depending on the available data |
 | The port is unknown | Calculate it with the `32NN` rule from the instance number |
 | The connection does not respond | `nc -vz` to check the network and the VPN |
-
-## Limits of this guide
-
-- It has been tested on a single Mac (M-series processor, macOS Tahoe 26.6.2), with patch 14 of version 8.10 and against a single system.
-- Only the simple form has been tested. The forms with a message server and with a symbolic name are described according to SAP documentation, without testing them.
-- The confidence level was left at its default value, without evaluating the other options.
-- It was not recorded whether macOS displayed any security warning when opening the application for the first time.
