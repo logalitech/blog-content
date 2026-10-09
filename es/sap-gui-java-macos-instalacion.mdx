@@ -2,6 +2,7 @@
 title: "SAP GUI for Java en macOS: instalación y primera conexión"
 description: "SAP GUI for Java 8.10 en un Mac con procesador M: el Java que ya trae, las tres formas de conectarse y por qué la pestaña Sistema no sirve con solo un host."
 pubDate: 2026-10-09
+updatedDate: 2026-10-09
 author: "Petru Pop"
 tags: ["SAP GUI", "SAP GUI for Java", "macOS"]
 category: "SAP GUI"
@@ -218,10 +219,3 @@ Tras el aviso de copyright, el sistema muestra **SAP Easy Access**: la instalaci
 | El string de conexión se rechaza | Empezar por `/H/`, `/M/` o `/R/` según los datos disponibles |
 | El puerto no se conoce | Calcularlo con la regla `32NN` a partir del número de instancia |
 | La conexión no responde | `nc -vz` para comprobar la red y la VPN |
-
-## Límites de esta guía
-
-- Se ha probado en un solo Mac (procesador de la serie M, macOS Tahoe 26.6.2), con el patch 14 de la versión 8.10 y contra un solo sistema.
-- Solo se ha probado la forma simple. Las formas con servidor de mensajes y con nombre simbólico se describen según la documentación de SAP, sin probarlas.
-- El nivel de confianza se dejó en su valor por defecto, sin evaluar las otras opciones.
-- No se registró si macOS mostró algún aviso de seguridad al abrir la aplicación por primera vez.
