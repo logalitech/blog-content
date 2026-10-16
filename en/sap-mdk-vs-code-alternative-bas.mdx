@@ -1,6 +1,6 @@
 ---
-# origen: es/sap-mdk-vs-code-alternativa-bas.mdx@84f92047671e8d76615660ec9190700abe530ac0 (versión generada desde el artículo en español; no editar este fichero)
-title: "SAP MDK in VS Code: a better alternative to BAS"
+# traducción: autor (versión escrita por el autor; el flujo de traducción automática no la sustituye)
+title: "A better alternative to BAS for MDK development"
 description: "How to set up a local VS Code environment to develop SAP MDK applications without Business Application Studio, and work on them with AI agents."
 pubDate: 2026-10-14
 author: "Abel Burduhos"
@@ -10,77 +10,78 @@ draft: false
 lang: "en"
 translationKey: "sap-mdk-vs-code-alternativa-bas"
 ---
-The SAP tutorials for the Mobile Development Kit (MDK) set up the editor in the cloud, in a dev space in SAP Business Application Studio (BAS).
 
-The editor does not have to be there. Since [version 2.0](https://community.sap.com/t5/technology-blog-posts-by-sap/sap-mobile-development-kit-editor-2-0-one-editor-every-platform/ba-p/14384812), the Mobile Development Kit extension is a single extension for both Business Application Studio and VS Code, with the same graphical editors, so the entire environment fits into a local VS Code.
+SAP's tutorials for the Mobile Development Kit set up the editor in the cloud using a dev space in SAP Business Application Studio (BAS).
 
-For SAP Mobile Services, it makes no difference which editor deploys the application.
+The editor does not have to live there. Since [version 2.0](https://community.sap.com/t5/technology-blog-posts-by-sap/sap-mobile-development-kit-editor-2-0-one-editor-every-platform/ba-p/14384812) the Mobile Development Kit extension is a single extension for both Business Application Studio and VS Code, with the same graphical editors, so the whole setup fits in a local VS Code.
 
-Before AI coding agents, Business Application Studio had a real advantage: a dev space came prepared with all the tools installed, and a quick application required no setup on the developer's machine. Today, a single request to a coding agent installs Node.js, the Cloud Foundry CLI, the extensions and the generator, and that advantage disappears.
+Mobile Services does not care which editor deploys to it.
 
-A local VS Code is fast, runs the extensions the developer already uses and keeps working offline from the cloud, which makes it a better option for most developers.
+Before AI coding agents, Business Application Studio had a real advantage. A dev space came ready with every tool installed, so a quick application needed no setup on the developer's own machine. Today a single prompt to a coding agent installs Node.js, the Cloud Foundry CLI, the extensions and the generator, and that advantage is gone.
 
-## Step 1. Install the tools
+Local VS Code is fast, runs the plugins developers already use, and keeps working without a cloud connection, which makes it a better choice for most developers.
 
-Three things are needed on the machine: VS Code, Node.js and the Cloud Foundry CLI.
+## 1. Install the tools
 
-## Step 2. Install the extensions
+Three things on the machine: VS Code, Node.js and the Cloud Foundry CLI.
 
-Four extensions from the VS Code marketplace are installed. It is best to search for them by their identifier, because several SAP extensions have similar names.
+## 2. Install the extensions
 
-| Extension | Identifier | Purpose |
+Four extensions from the marketplace. Search by ID, because several SAP extensions have similar names.
+
+| Extension | ID | What it does |
 |---|---|---|
-| Mobile Development Kit Editor | `SAPSE.vsc-extension-mdk` | The graphical editors, validation, build and deployment |
+| Mobile Development Kit Editor | `SAPSE.vsc-extension-mdk` | The graphical editors, validation, build and deploy |
 | Application Wizard | `SAPOS.yeoman-ui` | The project creation wizard |
-| Cloud Foundry Tools | `SAPOSS.vscode-cf-tools` | The login with which the MDK extension reaches Mobile Services |
-| SAP Business Application Studio toolkit | `SAPOSS.app-studio-toolkit` | It installs itself along with the Application Wizard |
+| Cloud Foundry Tools | `SAPOSS.vscode-cf-tools` | The login through which the MDK extension reaches Mobile Services |
+| SAP Business Application Studio toolkit | `SAPOSS.app-studio-toolkit` | Installs itself with the Application Wizard |
 
-![SAP SE's Mobile Development Kit Editor extension in the VS Code marketplace, with the identifier sapse.vsc-extension-mdk](/images/blog/sap-mdk-vs-code-alternativa-bas-01-extension-mdk-editor.png)
+![The Mobile Development Kit Editor extension by SAP SE in the VS Code marketplace, identifier sapse.vsc-extension-mdk](/images/blog/sap-mdk-vs-code-alternativa-bas-01-extension-mdk-editor.png)
 
-![SAP OS's Application Wizard extension, with the identifier sapos.yeoman-ui](/images/blog/sap-mdk-vs-code-alternativa-bas-02-extension-application-wizard.png)
+![The Application Wizard extension by SAP OS, identifier sapos.yeoman-ui](/images/blog/sap-mdk-vs-code-alternativa-bas-02-extension-application-wizard.png)
 
-![SAP OSS's Cloud Foundry Tools extension, with the identifier saposs.vscode-cf-tools](/images/blog/sap-mdk-vs-code-alternativa-bas-03-extension-cloud-foundry-tools.png)
+![The Cloud Foundry Tools extension by SAP OSS, identifier saposs.vscode-cf-tools](/images/blog/sap-mdk-vs-code-alternativa-bas-03-extension-cloud-foundry-tools.png)
 
-![SAP OSS's SAP Business Application Studio toolkit extension, with the identifier saposs.app-studio-toolkit](/images/blog/sap-mdk-vs-code-alternativa-bas-04-extension-bas-toolkit.png)
+![The SAP Business Application Studio toolkit extension by SAP OSS, identifier saposs.app-studio-toolkit](/images/blog/sap-mdk-vs-code-alternativa-bas-04-extension-bas-toolkit.png)
 
-## Step 3. Install the MDK generator
+## 3. Install the MDK generator
 
-The Application Wizard creates projects from the Yeoman generators installed on the machine. The MDK templates come from the SAP generator:
+The Application Wizard builds projects from the Yeoman generators installed on the machine. The MDK templates come from SAP's generator:
 
 ```bash
 npm install -g yo @sap/generator-mdk
 ```
 
-## Step 4. Log in to Cloud Foundry
+## 4. Log in to Cloud Foundry
 
-The Cloud Foundry view opens in the activity bar, or you run `CF: Login to Cloud Foundry` from the command palette. You enter the subaccount's API endpoint, which the SAP BTP cockpit shows on the subaccount's **Overview** page, under **Cloud Foundry Environment**, and you log in with credentials (**Credentials**) or with an SSO passcode (**SSO Passcode**).
+Open the Cloud Foundry view in the activity bar, or run `CF: Login to Cloud Foundry` from the command palette. Enter the API endpoint of the subaccount, which the SAP BTP cockpit shows on the subaccount's **Overview** page under **Cloud Foundry Environment**, and sign in with credentials or an SSO passcode.
 
-![Cloud Foundry Sign In and Targets page in VS Code, with the endpoint field and the choice between Credentials and SSO Passcode](/images/blog/sap-mdk-vs-code-alternativa-bas-05-cloud-foundry-sign-in.png)
+![The Cloud Foundry Sign In and Targets page in VS Code, with the endpoint field and a choice between Credentials and SSO Passcode](/images/blog/sap-mdk-vs-code-alternativa-bas-05-cloud-foundry-sign-in.png)
 
-Then you run `CF: Set Org and Space` and choose the organization and space that contain the Mobile Services application. The subaccount, organization and space hierarchy is explained in [The Cloud Foundry model: orgs, spaces and apps without the mystery](/en/blog/cf-modelo-org-space-app/).
+Then run `CF: Set Org and Space` and choose the organization and space that hold your Mobile Services app. The hierarchy of subaccount, organization and space is explained in [The Cloud Foundry model: orgs, spaces and apps demystified](/en/blog/cf-modelo-org-space-app/).
 
-![VS Code command palette with the CF: Set Org and Space command](/images/blog/sap-mdk-vs-code-alternativa-bas-06-cf-set-org-and-space.png)
+![The command palette with CF: Set Org and Space](/images/blog/sap-mdk-vs-code-alternativa-bas-06-cf-set-org-and-space.png)
 
-## Step 5. Create the project
+## 5. Create the project
 
-An empty folder is opened in VS Code, because the wizard creates the project, by default, in the open folder. Then the command palette is opened with Cmd+Shift+P, or Ctrl+Shift+P on Windows, and `MDK: Create Project with Wizard` is run.
+Open an empty folder in VS Code, since the wizard creates the project in the open folder by default. Then open the command palette with Cmd+Shift+P, or Ctrl+Shift+P on Windows, and run `MDK: Create Project with Wizard`.
 
-To learn how to build a first MDK application step by step, SAP offers the mission [Create Your First MDK Application](https://developers.sap.com/tutorials/mission-create-your-first-mdk-application).
+To learn how to build a first MDK app step by step, follow SAP's mission [Create Your First MDK Application](https://developers.sap.com/tutorials/mission-create-your-first-mdk-application).
 
-## Working on the MDK app with local agents
+## Working on the app with local agents
 
-The app is now a folder on the developer's machine, and everything the editor offers works on it, including coding agents. Agents such as Claude Code, Codex, GitHub Copilot, Cline and OpenCode read and modify the same pages, actions, rules and services that the graphical editors open. A page generated by an agent can be tweaked by hand in the Page Editor, and the agent can connect a hand-designed page to its actions and data.
+The app is now a folder on the developer's own machine, and everything in the editor works on it, the coding agents included. Agents such as Claude Code, Codex, GitHub Copilot, Cline and OpenCode read and change the same pages, actions, rules and services that the graphical editors open. A page an agent generates can be refined by hand in the Page Editor, and a page designed by hand can be wired up by the agent.
 
-![MDK project generated in VS Code, with its folders in the explorer, Main.page open in the graphical Page Editor and the coding agents in the editor title bar](/images/blog/sap-mdk-vs-code-alternativa-bas-07-proyecto-mdk-y-agentes.png)
+![The generated MDK project in VS Code, with its folders in the explorer, Main.page open in the graphical Page Editor, and the coding agents in the editor title bar](/images/blog/sap-mdk-vs-code-alternativa-bas-07-proyecto-mdk-y-agentes.png)
 
-![Main.page open as JSON in the VS Code text editor, with the coding agents in the editor title bar](/images/blog/sap-mdk-vs-code-alternativa-bas-08-main-page-editor-de-texto.png)
+![The same Main.page open as JSON in the text editor, with the coding agents in the editor title bar](/images/blog/sap-mdk-vs-code-alternativa-bas-08-main-page-editor-de-texto.png)
 
-So that the agent works with up-to-date MDK knowledge, and not with what it remembers, SAP publishes an open-source MCP server for MDK:
+To give an agent MDK knowledge that is current rather than remembered, SAP publishes an open source MCP server for MDK:
 
 ```bash
 npm install -g @sap/mdk-mcp-server
 ```
 
-The server gives the agent the MDK schema, the project templates and the MDK command-line tools. With them, the agent can query what a control supports, generate a page or validate, build and deploy the app when asked. SAP's tutorial [Set Up MCP Server for MDK Development](https://developers.sap.com/tutorials/cp-mobile-dev-kit-mcp-setup) explains how to connect it to VS Code.
+It hands the agent the MDK schema, the project templates and the MDK command line tools, so the agent can look up what a control supports, generate a page, or validate, build and deploy the app on request. SAP's tutorial [Set Up MCP Server for MDK Development](https://developers.sap.com/tutorials/cp-mobile-dev-kit-mcp-setup) connects it to VS Code.
 
-Another MCP server from the SAP ecosystem, the one that exposes a SAP CAP service to an agent, is described in [SAP CAP as an MCP server: one annotation and three surprises](/en/blog/sap-cap-as-mcp-server/).
+Another MCP server in the SAP ecosystem, one that exposes an SAP CAP service to an agent, is described in [SAP CAP as an MCP server: one annotation and three surprises](/en/blog/sap-cap-as-mcp-server/).
