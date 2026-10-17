@@ -1,0 +1,235 @@
+---
+title: "Habilitar Extensibility (Key User) en SAP S/4HANA 2025"
+description: "Pasos para habilitar las apps de extensibilidad key user en SAP S/4HANA 2025: nota SAP, ATO, catálogo SAP_BASIS_BC_EXT, nodos ICF, servicios OData y rol."
+pubDate: 2026-10-17
+author: "Grecia Rodriguez"
+tags: ["SAP S/4HANA", "SAP Fiori", "Key User Extensibility", "Fiori Launchpad"]
+category: "Administración Fiori"
+draft: false
+lang: "es"
+translationKey: "habilitar-key-user-extensibility-s4hana"
+---
+
+El punto de partida fue la petición de un cliente: necesitaba que sus key users pudieran trabajar con las apps de extensibilidad (Custom Fields, Custom Logic, Custom CDS Views, etc.) en el Fiori Launchpad de SAP S/4HANA 2025. Esas apps no quedan operativas solo con asignar un catálogo. La condición clave es tener configurado el **Adaptation Transport Organizer (ATO)**: sin él, las apps no pueden guardar nada y muestran errores indicando que el ATO no está configurado. Alrededor del ATO hacen falta además una nota SAP, el catálogo, los nodos ICF, los servicios OData y un rol.
+
+Esta guía recoge los pasos realizados, en orden, para dejar las apps de extensibilidad disponibles y funcionando.
+
+## Resumen de los pasos en SAP S/4HANA 2025
+
+| # | Paso | Herramienta |
+|---|------|-------------|
+| 1 | Aplicar la nota SAP 2283716 | SNOTE |
+| 2 | Configurar el Adaptation Transport Organizer (ATO) | Pantalla *Setup Adaptation Transport Organizer for Key User Tools* |
+| 3 | Copiar el catálogo de negocio estándar `SAP_BASIS_BC_EXT` | `/n/UI2/FLPCM_CUST` |
+| 4 | Activar nodos ICF y servicios OData de cada app | SICF y `/IWFND/MAINT_SERVICE` |
+| 5 | Crear el espacio y la página, y crear el rol con el catálogo y el espacio | Launchpad y PFCG |
+| 6 | Verificar en el Launchpad | Fiori Launchpad |
+
+## 1. Aplicar la nota SAP 2283716
+
+La nota **SAP Note 2283716** es necesaria para poder usar las apps del catálogo de negocio estándar **`SAP_BASIS_BC_EXT`** (Extensibility).
+
+Este paso lo realiza el equipo **Basis** mediante la transacción **SNOTE**.
+
+## 2. Setup del Adaptation Transport Organizer (ATO)
+
+El ATO permite que las extensiones de los key users se registren en transportes. Se configura en la pantalla **Setup Adaptation Transport Organizer for Key User Tools**.
+
+### Uso y funcionamiento del ATO
+
+Las apps de extensibilidad (Custom Fields, Custom Logic, Custom CDS Views, Custom Business Objects...) permiten a un *key user* crear objetos de desarrollo (campos, lógica, vistas CDS) sin usar el ABAP Workbench. Esos objetos necesitan, igual que cualquier desarrollo, un **paquete**, un **prefijo o namespace** y una **orden de transporte** para llegar a calidad y producción. Como el key user no gestiona transportes manualmente, esta configuración le da al sistema todo eso por adelantado:
+
+- **Define dónde se crean los objetos:** paquete local y paquete sandbox donde se guardan las extensiones.
+- **Define cómo se nombran:** el prefijo (`ZZ1_`) se antepone a los objetos transportables y el prefijo sandbox (`ZZ9_`) a los de prueba, evitando colisiones con objetos SAP o de desarrollo propio.
+- **Habilita el transporte automático:** el ATO recoge las extensiones en órdenes de transporte («adaptation transports») que luego se gestionan con la app *Register Extensions for Transport*.
+- **Separa pruebas de contenido productivo:** lo creado en sandbox no se transporta.
+
+Sin este paso, las apps de extensibilidad no pueden guardar nada y muestran errores indicando que el ATO no está configurado.
+
+> Este paso se realiza con el apoyo del equipo **Basis**.
+
+### Configuración usada
+
+| Campo | Valor |
+|-------|-------|
+| Tipo de setup | **Prefix setup** |
+| Local package | `TEST_YY_KEY_USER_LOCAL` |
+| Sandbox package | `TEST_YY_KEY_USER_SANDBOX` |
+| Namespace | (vacío, deshabilitado en prefix setup) |
+| Prefix | `ZZ1_` |
+| Sandbox Prefix | `ZZ9_` |
+
+El ATO se puede configurar con **Setup with specific data**, indicando los paquetes y los prefijos manualmente (la opción que sigue este artículo), o con **Setup with default data**, que aplica los valores por defecto del sistema.
+
+Pasos:
+
+1. Abrir la transacción **`S_ATO_SETUP`**.
+2. Seleccionar **Prefix setup**.
+3. Informar paquetes y prefijos como en la tabla.
+4. Pulsar **Setup with specific data**.
+5. Comprobar que **AdaptationTransport Organizer configured = Yes** (indicador verde). El botón **Details** muestra el detalle.
+
+![Pantalla Setup Adaptation Transport Organizer for Key User Tools con Prefix setup, paquetes TEST_YY_KEY_USER_LOCAL y TEST_YY_KEY_USER_SANDBOX, prefijos ZZ1_ y ZZ9_ y el indicador configurado en Yes](/images/blog/habilitar-key-user-extensibility-s4hana-01-ato-setup.png)
+
+> **Nota:** una vez configurado, el botón **Setup with default data** queda deshabilitado (flecha roja en la captura). Es el comportamiento esperado: ya se hizo el setup con datos específicos. Los botones **Lock** y **Unlock** permiten bloquear o desbloquear la configuración, y **Setup read only** deja el sistema en modo solo lectura.
+
+## 3. Copiar el catálogo `SAP_BASIS_BC_EXT`
+
+Con la transacción **`/n/UI2/FLPCM_CUST`** (Launchpad Content Manager, contenido de cliente) en el modo de versiones **S/4HANA**:
+
+1. Abrir `/n/UI2/FLPCM_CUST`.
+
+   ![Launchpad Content Manager Client-Specific (Customizing) con la pestaña Catalogs y la lista de catálogos](/images/blog/habilitar-key-user-extensibility-s4hana-02-flpcm-cust.png)
+
+2. Seleccionar el catálogo estándar **`SAP_BASIS_BC_EXT`** y **copiarlo** al ámbito de cliente (catálogo `Z...` o `Y...`).
+
+   ![Búsqueda del catálogo SAP_BASIS_BC_EXT, Extensibility - Custom Objects, con el botón Copy señalado y el contenido del catálogo en la parte inferior](/images/blog/habilitar-key-user-extensibility-s4hana-03-copiar-catalogo.png)
+
+3. Generar una orden de transporte de customizing y guardar en ella la copia del catálogo.
+
+   ![Ventana Prompt for customizing request con el campo de descripción corta y el botón de confirmar señalado](/images/blog/habilitar-key-user-extensibility-s4hana-04-orden-customizing.png)
+
+Este catálogo contiene los tiles de extensibilidad (ver apartado 6).
+
+## 4. Activar nodos ICF y servicios OData
+
+Para que cada app abra y cargue datos, hay que activar sus servicios.
+
+### Nodos ICF (transacción SICF)
+
+1. Abrir **SICF** y buscar el servicio de la app (ruta `/sap/bc/ui5_ui5/...` o `/sap/bc/ui2/...`).
+
+   ![Pantalla Define Services de SICF con la ruta /sap/bc/ui5_ui5/sap/nw_aps_ext_ccv en el campo Service Path](/images/blog/habilitar-key-user-extensibility-s4hana-05-sicf-buscar.png)
+
+2. Clic derecho sobre el nodo y **Activate Service**. Si la opción aparece en gris claro, el nodo ya está activo y no hay que hacer nada más.
+
+   ![Menú contextual del nodo nw_aps_ext_ccv en SICF con la opción Activate Service resaltada](/images/blog/habilitar-key-user-extensibility-s4hana-06-sicf-activar.png)
+
+### Servicios OData (transacción `/IWFND/MAINT_SERVICE`)
+
+A nivel general, las acciones son:
+
+1. Ubicar con el filtro el servicio OData indicado en la documentación de la app (Fiori Apps Reference Library).
+
+   ![Pantalla Activate and Maintain Services con el botón Filter señalado](/images/blog/habilitar-key-user-extensibility-s4hana-07-maint-service-filtro.png)
+
+   ![Ventana Filter for Service Catalog con APS_EXT_CCV_SRV en el campo External Service Name](/images/blog/habilitar-key-user-extensibility-s4hana-08-maint-service-buscar.png)
+
+2. Validar lo siguiente:
+   - Que el servicio esté registrado: si aparece en la lista, ya está dado de alta.
+   - Que el servicio OData esté activo.
+   - Que el **System Alias** esté indicado, siempre que el servicio no esté en modo *co-deployed*.
+
+   ![Servicio APS_EXT_CCV_SRV en el catálogo, con el nodo ICF ODATA activo y el alias de sistema LOCAL](/images/blog/habilitar-key-user-extensibility-s4hana-09-maint-service-activo.png)
+
+> **Nota:** si el servicio no aparece en la transacción, se debe agregar con **Add Service**.
+
+Repetir para **cada aplicación** del catálogo:
+
+| App (tile) | Nodo ICF (`/sap/bc/ui5_ui5/sap/...`) | Servicio OData |
+|------------|----------|----------------|
+| Configure Software Packages | `nw_aps_ato_conf` | `APS_EXT_ATO_PK_CFG_SRV` |
+| Custom Business Objects | `nw_aps_cbo` | `APS_EXT_CBO_D_SRV`, `APS_EXT_AFT_SRV`, `APS_EXT_CCL_SRV` |
+| Custom CDS Views | `nw_aps_ext_ccv` | `APS_EXT_CCV_SRV` |
+| Custom Fields (Custom Fields and Logic) | `nw_aps_ext_cfl` | `APS_CUSTOM_FIELD_MAINTENANCE_SRV`, `APS_DATA_SOURCE_EXTENSION_SRV` |
+| Custom Logic (Custom Fields and Logic) | `nw_aps_ext_cfl` | `APS_CUSTOM_FIELD_MAINTENANCE_SRV`, `APS_DATA_SOURCE_EXTENSION_SRV` |
+| Custom Logic Tracing | `nw_aps_clt` | `APS_EXT_CLT_SRV` |
+| Custom Reusable Elements | `nw_aps_cre` | `APS_EXT_CCL_SRV`, `APS_EXT_CRL_SRV` |
+| Extensibility Inventory | `nw_aps_extinv` | `APS_EXT_DEP_INVENTORY_SRV` |
+| Register Extensions for Transport | `nw_aps_ato_regi` | `APS_EXT_ATO_PK_AI_SRV` |
+| Maintain Translations | `nw_aps_mtr` | `UI_SMTR_PROJECT` |
+
+### Fiori Apps Reference Library
+
+- **Nueva biblioteca:** [fal.cloud.sap](https://fal.cloud.sap)
+- **Biblioteca clásica:** [fioriappslibrary.hana.ondemand.com](https://fioriappslibrary.hana.ondemand.com) (SAP la depreca y la discontinuará en diciembre de 2026; redirige a la nueva)
+
+**Utilidad.** Es el catálogo oficial de SAP con todas las apps SAP Fiori. Para cada app muestra:
+
+- Información funcional: qué hace, rol de negocio, tipo de aplicación y versión del producto.
+- Información técnica para implementarla (pestaña *Implementation Information*): notas SAP importantes, instalación y configuración.
+- Datos de configuración: nodos ICF, servicios OData, roles PFCG de back-end y configuración técnica del Launchpad (catálogo, semantic object, target mapping).
+- Apps relacionadas y comparación entre versiones del producto.
+
+En esta guía se usa para saber qué nodos ICF y servicios OData activar en cada app de extensibilidad. Se filtra por producto (*SAP S/4HANA Private Cloud and On-Premise*) y se selecciona la **versión que corresponda a la del sistema** (en esta guía, SAP S/4HANA 2025 On-Premise, que la biblioteca muestra como *2025 (On-Premise)*; no confundir con las opciones *Private Cloud*, que son otra edición), porque los nodos ICF, servicios OData y versiones de componente pueden cambiar entre releases. Después se abre la sección *Configuration*. La versión del sistema se consulta en *System*, *Status* del SAP GUI (componente SAP_BASIS o SAP S/4HANA).
+
+> Los datos de la tabla anterior salen de la sección *Configuration*, pestaña *Implementation Information* de cada app (producto *SAP S/4HANA (Private Cloud and On-Premise)*, versión **2025 (On-Premise)**). En esta versión la app aparece en la biblioteca como *Custom CDS Views (Version 2)*; la app antigua *Custom CDS Views* (`nw_aps_cds_gke`) solo llega hasta la versión 2023. Todos los servicios OData son versión `0001`.
+>
+> Cada app lleva además nodos ICF de librerías que la biblioteca marca con `*` («añadidos automáticamente por dependencias»): `nw_aps_lib`, `nw_aps_ext_lib`, `nw_aps_ato_lib`, `nw_aps_aft_lib`, `nw_aps_ccl_lib` y `nw_aps_tra_mtr_lib`. Qué librerías necesita cada app está en las capturas de abajo (Custom Logic Tracing no necesita ninguna). Si el nodo no está activo tras activar el principal, actívalo también.
+
+**Configure Software Packages**
+
+![Sección Configuration de Configure Software Packages en la Fiori Apps Reference Library](/images/blog/habilitar-key-user-extensibility-s4hana-11-fal-configure-software-packages.png)
+
+**Custom Business Objects**
+
+![Sección Configuration de Custom Business Objects en la Fiori Apps Reference Library: nodo nw_aps_cbo con sus librerías y servicios APS_EXT_AFT_SRV, APS_EXT_CBO_D_SRV y APS_EXT_CCL_SRV](/images/blog/habilitar-key-user-extensibility-s4hana-12-fal-custom-business-objects.png)
+
+**Custom CDS Views**
+
+![Sección Configuration de Custom CDS Views en la Fiori Apps Reference Library](/images/blog/habilitar-key-user-extensibility-s4hana-13-fal-custom-cds-views.png)
+
+**Custom Fields and Logic** (Custom Fields y Custom Logic)
+
+![Sección Configuration de Custom Fields and Logic en la Fiori Apps Reference Library: nodos ICF nw_aps_ext_cfl, nw_aps_ext_lib y nw_aps_lib, y servicios OData APS_CUSTOM_FIELD_MAINTENANCE_SRV y APS_DATA_SOURCE_EXTENSION_SRV](/images/blog/habilitar-key-user-extensibility-s4hana-10-fal-custom-fields.png)
+
+**Custom Logic Tracing**
+
+![Sección Configuration de Custom Logic Tracing en la Fiori Apps Reference Library](/images/blog/habilitar-key-user-extensibility-s4hana-14-fal-custom-logic-tracing.png)
+
+**Custom Reusable Elements**
+
+![Sección Configuration de Custom Reusable Elements en la Fiori Apps Reference Library](/images/blog/habilitar-key-user-extensibility-s4hana-15-fal-custom-reusable-elements.png)
+
+**Extensibility Inventory**
+
+![Sección Configuration de Extensibility Inventory en la Fiori Apps Reference Library](/images/blog/habilitar-key-user-extensibility-s4hana-16-fal-extensibility-inventory.png)
+
+**Register Extensions for Transport**
+
+![Sección Configuration de Register Extensions for Transport en la Fiori Apps Reference Library](/images/blog/habilitar-key-user-extensibility-s4hana-17-fal-register-extensions.png)
+
+**Maintain Translations**
+
+![Sección Configuration de Maintain Translations en la Fiori Apps Reference Library](/images/blog/habilitar-key-user-extensibility-s4hana-18-fal-maintain-translations.png)
+
+## 5. Rol, espacio y página 
+
+1. Crear la página y el espacio **Extensibility - Custom Objects** con los tiles del catálogo. Esta acción se realiza desde el **Fiori Launchpad**, utilizando las dos apps: **Manage Launchpad Spaces** y **Manage Launchpad Pages**.
+
+   ![Tiles Manage Launchpad Spaces y Manage Launchpad Pages en el Fiori Launchpad](/images/blog/habilitar-key-user-extensibility-s4hana-22-manage-launchpad-spaces-pages.png)
+
+   ![Espacio Z_SP_BC_EXT, Extensibility - Custom Objects, con la página Z_PG_BC_EXT visible](/images/blog/habilitar-key-user-extensibility-s4hana-20-espacio-launchpad.png)
+
+2. En **PFCG**, crear un rol propio en el espacio de nombres de cliente (`Z` o `Y`) y asignarle en el menú el catálogo copiado (apartado 3) y el espacio creado en el paso anterior. El rol debe tener asignados tanto el catálogo como el espacio. No es buena práctica usar ni modificar los roles de negocio estándar de SAP. Este paso lo realiza normalmente el equipo de **Basis Security**.
+
+   ![Rol Z_BC_EXT_COPY en PFCG con el catálogo Extensibility - Custom Objects en la pestaña Menu](/images/blog/habilitar-key-user-extensibility-s4hana-19-pfcg-rol.png)
+
+3. Asignar el rol al usuario para que vea el espacio y los tiles en el Launchpad.
+
+   ![Pestaña User del rol Z_BC_EXT_COPY en PFCG con la tabla User Assignments, donde se asigna el rol a los usuarios](/images/blog/habilitar-key-user-extensibility-s4hana-23-pfcg-usuario.png)
+
+## 6. Verificación
+
+En el Fiori Launchpad, el usuario debe ver la pestaña **Extensibility - Custom Objects** con los tiles:
+
+- Configure Software Packages
+- Custom Business Objects
+- Custom CDS Views
+- Custom Fields
+- Custom Logic
+- Custom Logic Tracing
+- Custom Reusable Elements
+- Extensibility Inventory
+- Register Extensions for Transport
+- Maintain Translations
+
+![Pestaña Extensibility - Custom Objects en el Fiori Launchpad con los diez tiles de extensibilidad](/images/blog/habilitar-key-user-extensibility-s4hana-21-launchpad-extensibility.png)
+
+Abrir cada app y comprobar que carga sin errores. Si falla, revisar SICF, `/IWFND/MAINT_SERVICE`, `/IWFND/ERROR_LOG` y las autorizaciones con **SU53**.
+
+## Referencias
+
+- SAP Note **2283716**
+- Catálogo de negocio: **SAP_BASIS_BC_EXT**
+- Transacción: **/n/UI2/FLPCM_CUST**
