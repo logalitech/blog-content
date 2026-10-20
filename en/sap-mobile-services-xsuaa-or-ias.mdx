@@ -1,0 +1,52 @@
+---
+# traducción: autor (versión escrita por el autor; el flujo de traducción automática no la sustituye)
+title: "The one SAP Mobile Services setting you cannot change later"
+description: "When you create an app in SAP Mobile Services you choose XSUAA or IAS, and that choice cannot be changed later. What each option means and when to choose IAS."
+pubDate: 2026-10-20
+author: "Abel Burduhos"
+tags: ["SAP Mobile Services", "XSUAA", "IAS"]
+category: "SAP Mobile Services"
+draft: false
+lang: "en"
+translationKey: "sap-mobile-services-xsuaa-o-ias"
+---
+
+Almost everything in the SAP Mobile Services cockpit can be changed after the fact. Token lifetimes, destinations, features, roles, the client configuration. You create an app, you get it wrong, you fix it.
+
+There is one exception. When a mobile application is created you choose which service issues the token it runs on, either XSUAA or Identity Authentication, and that answer is fixed for the life of the app.
+
+SAP states it plainly in [the documentation](https://help.sap.com/doc/f53c64b93e5140918d676b927a3cd65b/Cloud/en-US/docs-en/guides/features/security/admin/config.html): **an app configured with XSUAA cannot be migrated to IAS, and the only way to change it is to create the application again.**
+
+## The screen where it happens
+
+Step three of the New Application wizard.
+
+![Step three of the New Application wizard in SAP Mobile Services, with XSUAA Settings and IAS Settings offered as two radio buttons](/images/blog/sap-mobile-services-xsuaa-o-ias-01-asistente-security-settings.png)
+
+## What the app looks like afterwards
+
+Open an application that already exists and go to Settings, then Security. One built on XSUAA shows this:
+
+![The Security page of an XSUAA based application, showing only an XSUAA Settings section](/images/blog/sap-mobile-services-xsuaa-o-ias-02-security-aplicacion-xsuaa.png)
+
+One built on IAS shows this:
+
+![The Security page of an IAS based application, showing only an IAS Settings section](/images/blog/sap-mobile-services-xsuaa-o-ias-03-security-aplicacion-ias.png)
+
+Same page, same product, one section each. The pencil in the corner edits what is inside that section, the service instance, the JSON file, the lifetimes. What it does not edit is the choice.
+
+## What you are actually choosing between
+
+XSUAA is the authorization service that comes with the BTP subaccount.
+
+IAS is Identity Authentication, the identity service of the wider SAP landscape. Create an app with IAS support and Mobile Services hands the login over to the IAS tenant, then takes back a token that says who the person is.
+
+That reads like a drawback, but it really isn't. It is how single sign-on works. The user signs in once, against the same tenant that guards the other SAP applications connected to it, with whatever the security team has put in front of it: the corporate user store, multifactor authentication, conditional access.
+
+For more on how single sign-on works, see ByteByteGo's [What Is Single Sign-on (SSO)? How It Works](https://youtu.be/O1cRJWYF-g4).
+
+## Choosing
+
+IAS is the right answer when the organisation already runs an IAS tenant and expects one login across its SAP applications.
+
+Decide it deliberately. It is the one setting you do not get to revisit.
