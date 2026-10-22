@@ -1,0 +1,114 @@
+---
+title: "SAP Integration Suite: activar el runtime de API Management"
+description: "API Management activado en SAP Integration Suite, pero sin Configure > APIs. Por qué falta el runtime y cómo activarlo en un trial y en un tenant productivo."
+pubDate: 2026-10-23
+author: "Ioan Hadarau"
+tags: ["SAP Integration Suite", "SAP API Management", "SAP BTP"]
+category: "BAIP IS"
+draft: false
+lang: "es"
+translationKey: "activar-api-management-integration-suite"
+---
+
+Has activado la capacidad de API Management en tu tenant de SAP Integration Suite. En **Manage Capabilities** aparece como activa, tienes los roles asignados y, aun así, en el menú no hay ni rastro de **Configure > APIs**. No puedes crear un API Proxy, ni un Key Value Map, ni un API Provider.
+
+En la página de inicio de Integration Suite, la tarjeta **Manage APIs** está, pero sin ningún enlace, mientras que el resto de capacidades sí los tienen (**Discover Integrations**, **Configure Events**, **Manage Trading Partners**...). Y esto ocurre **aunque ya te hayas asignado todos los roles de API Management** (**APIPortal.Administrator**, **APIManagement.SelfService.Administrator**...): puedes cerrar sesión, volver a entrar y revisar las role collections, y la opción sigue sin aparecer.
+
+No es un problema de permisos, ni de caché del navegador, ni de roles. Falta un paso que es fácil pasar por alto: **activar el runtime de API Management**. En este artículo explicamos por qué ocurre y cómo se resuelve, primero en un entorno de prueba gratuito (trial) y después en un tenant productivo, donde el proceso pide algunas decisiones más. Todos los pasos se comprobaron el 23 de octubre de 2026.
+
+## Por qué no aparece el menú de APIs en SAP Integration Suite
+
+En SAP Integration Suite hay que distinguir dos cosas:
+
+| Concepto | Qué es | Dónde se gestiona |
+|----------|--------|-------------------|
+| **Capacidad** (Manage APIs) | El derecho a usar API Management dentro de Integration Suite: aprovisiona los componentes de diseño, como el modelado de APIs y el Developer Hub | **Home > Manage Capabilities** |
+| **Runtime** (Classic API Management) | El tenant de API Management donde viven y se ejecutan los API Proxies, las policies, los Key Value Maps y los API Providers | **Settings > Runtimes** |
+
+Activar la capacidad no crea el runtime. Mientras la pestaña **Classic API Management** de **Settings > Runtimes** está en **Inactive**, no existe ningún tenant de API Management detrás de la interfaz. Por eso Integration Suite no muestra **Configure > APIs**: no habría dónde guardar ni desplegar lo que crearas. La tarjeta **Manage APIs** de la página de inicio puede aparecer incluso sin enlaces.
+
+Cuando el runtime pasa a **Active**, el menú se completa con las opciones de API Management (**Configure > APIs**, **Discover > APIs**, **Test**, **Analyze**, **Engage**, **Monetize**). La tarjeta **Manage APIs** de la página de inicio también cambia: ahora muestra los enlaces **Discover APIs** y **Configure APIs**, y en el menú lateral aparece **Configure > APIs**.
+
+Ocurre igual con Cloud Integration: su runtime es la pestaña **Integration Cell**, que normalmente ya está activa. Por eso la diferencia solo se nota con API Management.
+
+## Antes de empezar
+
+- La capacidad **Manage APIs** activada en Integration Suite.
+- Los roles de API Management asignados a tu usuario, por ejemplo **APIPortal.Administrator** y **APIManagement.SelfService.Administrator**.
+- Solo se puede activar **una instancia de API Management por subcuenta**. Si necesitas más, necesitas más subcuentas.
+
+## Parte 1: entorno de prueba gratuito (trial)
+
+En un entorno trial el proceso es directo, porque no hay que elegir tipo de cuenta ni nombre de host.
+
+### Paso 1. Localizar el runtime inactivo
+
+Ve a **Settings > Runtimes** y abre la pestaña **Classic API Management**. Su estado es **Inactive** y la página muestra el mensaje «Activate API Management». Fíjate en el menú lateral: en **Discover** y **Design** todavía no aparece **APIs**.
+
+![Entorno trial: Settings > Runtimes con Classic API Management en estado Inactive y el botón Activate arriba a la derecha](/images/blog/activar-api-management-integration-suite-01-runtime-inactivo-trial.png)
+
+### Paso 2. Activar
+
+Pulsa **Activate** (arriba a la derecha) y confirma. Al cabo de unos minutos el estado pasa a **Active** con el mensaje «Trial account has been provisioned successfully».
+
+Cierra sesión y vuelve a entrar. Ya aparece **APIs** en el menú (por ejemplo, en **Discover**) y tienes acceso a **Configure > APIs**.
+
+![Entorno trial: Classic API Management en estado Active, con el mensaje Trial account has been provisioned successfully y APIs en el menú Discover](/images/blog/activar-api-management-integration-suite-02-runtime-activo-trial.png)
+
+## Parte 2: tenant productivo
+
+En un tenant productivo la pantalla es distinta: antes de activar hay que configurar el servicio. Además, aquí hay decisiones que no conviene tomar a la ligera.
+
+> **Antes de pulsar Activate en un tenant de cliente:** la activación crea el runtime productivo de API Management y puede tener impacto en costes. Pide la autorización por escrito del responsable de la cuenta.
+
+### Paso 1. Configurar el servicio
+
+En **Settings > Runtimes > Classic API Management** (estado **Inactive**), abre **Configure**. La página **Configure the API Management Service** recuerda que solo se puede activar una instancia de API Management por subcuenta. Rellena:
+
+| Campo | Qué poner |
+|-------|-----------|
+| **Account Type** | **Production** para producción. **Non Production** para desarrollo o calidad |
+| **Host Alias** | El nombre que formará la URL de todos los API Proxies: `https://<host-alias>.apimanagement.<región>.hana.ondemand.com` |
+| **Notification Contact** | Un buzón que vaya a seguir existiendo, mejor del equipo que del consultor |
+| **Make ... the API Portal administrator** | Marca la casilla para que tu usuario quede como administrador del API Portal |
+
+> **El Host Alias es la decisión importante.** Es la URL que vas a comunicar a todos los consumidores de tus APIs. Elige un nombre estable y coherente con tu convención de entornos, porque cambiarlo después obliga a todos los consumidores a cambiar su configuración.
+
+### Paso 2. Activar y confirmar
+
+Pulsa **Activate**. Aparece la ventana **Set-up Confirmation** con el resumen: tipo de cuenta, Host Alias, formato de la URL de los proxies y contacto. Revísalo con calma y pulsa **Confirm**.
+
+### Paso 3. Esperar al aprovisionamiento
+
+El estado pasa a **In Progress** y SAP avanza por tres fases:
+
+1. **Configuration**: configura API Management en la subcuenta.
+2. **Testing the Setup**: despliega un API Proxy de ejemplo y lanza pruebas de humo.
+3. **Release Notification**: envía un correo de confirmación al contacto que indicaste.
+
+En nuestro caso tardó alrededor de un minuto. Al terminar, el estado es **Active**, la página muestra **API Management Service Set Up Complete** y las tres fases indican **Success**.
+
+### Paso 4. Verificar la conexión
+
+En la misma tarjeta, abre **Connect** y pulsa **Test Connection**. Debe devolver **Success** y mostrar la URL del Developer Hub. Recarga la página: el menú lateral ya incluye **Configure > APIs**, **Analyze**, **Engage** y **Monetize**.
+
+## Diferencias entre trial y productivo
+
+| | Trial | Productivo |
+|---|---|---|
+| Formulario previo | No | Sí: tipo de cuenta, Host Alias, contacto y administrador |
+| Tipo de cuenta | No se elige | Production o Non Production |
+| Host de los proxies | Lo asigna SAP | Lo defines tú con el Host Alias |
+| Fases de aprovisionamiento visibles (proxy de ejemplo, correo) | No se mostraron en nuestra prueba | Sí |
+| Impacto en costes | No | Puede tenerlo: pide autorización |
+
+## Después de activar
+
+- **Da acceso a tu equipo:** asigna **APIPortal.Administrator** a quien vaya a administrar API Management (BTP Cockpit > Security > Role Collections). Es la recomendación que el propio asistente muestra al terminar. Si necesitas repasar cómo funcionan las role collections, lo explicamos en [Role collections, role templates y usuarios sombra en SAP BTP](/blog/btp-admin-roles-usuarios/).
+- **Revisa el proxy de ejemplo** que SAP despliega en la fase de pruebas. No forma parte de tu solución y puedes borrarlo.
+- **Configura los API Providers y los Key Value Maps** antes de importar o crear tus proxies.
+- **Comprueba la compatibilidad TLS de tus consumidores.** SAP está retirando cifrados TLS 1.2 antiguos en la entrada a API Management (KBA 3797056). Un cliente incompatible falla en el handshake y no deja rastro en los logs de API Management. Lo contamos en detalle en [SAP API Management: así cambian los cifrados TLS](/blog/sap-api-management-cifrados-tls/).
+
+## En resumen
+
+Si en Integration Suite tienes API Management «activado» pero no ves **Configure > APIs**, mira **Settings > Runtimes**. La capacidad y el runtime son dos cosas distintas, y sin el runtime **Classic API Management** en **Active** no hay API Management usable. En un trial basta con pulsar **Activate**. En producción, decide bien el Host Alias, pide autorización y deja como contacto un buzón del equipo.
