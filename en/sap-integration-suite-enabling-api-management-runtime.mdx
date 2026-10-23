@@ -1,5 +1,5 @@
 ---
-# origen: es/activar-api-management-integration-suite.mdx@0113881b2a76783c3d084d9573febbd6551be57a (versión generada desde el artículo en español; no editar este fichero)
+# origen: es/activar-api-management-integration-suite.mdx@732cdfbb0f8d4f06475ec779d227f045882df0f5 (versión generada desde el artículo en español; no editar este fichero)
 title: "SAP Integration Suite: activating the API Management runtime"
 description: "API Management activated in SAP Integration Suite, but no Configure > APIs. Why the runtime is missing and how to activate it in a trial and in a productive tenant."
 pubDate: 2026-10-23
@@ -17,7 +17,7 @@ On the Integration Suite home page, the **Manage APIs** card is there, but witho
 
 ![Integration Suite home page in a trial environment: the Manage APIs card appears without links because the API Management runtime is not activated](/images/blog/activar-api-management-integration-suite-10-inicio-manage-apis-sin-enlaces-trial.png)
 
-It is not a permissions problem, nor a browser cache problem, nor a roles problem. There is a step that is easy to overlook: **activating the API Management runtime**. In this article we explain why it happens and how to resolve it, first in a free trial environment and then in a productive tenant, where the process calls for a few more decisions. All the steps were verified on October 23, 2026.
+It is not a permissions problem, nor a browser cache problem, nor a roles problem. A step is missing that is easy to overlook: **activating the API Management runtime**. In this article we explain why it happens and how to solve it, first in a free trial environment and then in a productive tenant, where the process calls for a few more decisions. All the steps were verified on October 23, 2026.
 
 ## Why the APIs menu does not appear in SAP Integration Suite
 
@@ -28,19 +28,19 @@ In SAP Integration Suite, two things must be distinguished:
 | **Capability** (Manage APIs) | The right to use API Management within Integration Suite: it provisions the design components, such as API modeling and the Developer Hub | **Home > Manage Capabilities** |
 | **Runtime** (Classic API Management) | The API Management tenant where the API Proxies, policies, Key Value Maps and API Providers live and run | **Settings > Runtimes** |
 
-Activating the capability does not create the runtime. As long as the **Classic API Management** tab in **Settings > Runtimes** is **Inactive**, there is no API Management tenant behind the interface. That is why Integration Suite does not show **Configure > APIs**: there would be nowhere to save or deploy what you created. The **Manage APIs** card on the home page may appear even without links.
+Activating the capability does not create the runtime. While the **Classic API Management** tab under **Settings > Runtimes** is **Inactive**, there is no API Management tenant behind the interface. That is why Integration Suite does not show **Configure > APIs**: there would be nowhere to save or deploy what you created. The **Manage APIs** card on the home page may appear even without links.
 
 When the runtime becomes **Active**, the menu is completed with the API Management options (**Configure > APIs**, **Discover > APIs**, **Test**, **Analyze**, **Engage**, **Monetize**). The **Manage APIs** card on the home page also changes: it now shows the **Discover APIs** and **Configure APIs** links, and **Configure > APIs** appears in the side menu.
 
 ![Home page in a trial environment after activating the runtime: the Manage APIs card now shows Discover APIs and Configure APIs](/images/blog/activar-api-management-integration-suite-11-inicio-manage-apis-con-enlaces-trial.png)
 
-The same happens with Cloud Integration: its runtime is the **Integration Cell** tab, which is normally already active. That is why the difference is only noticeable with API Management.
+The same happens with Cloud Integration: its runtime is the **Integration Cell** tab, which is usually already active. That is why the difference is only noticeable with API Management.
 
 ## Before you start
 
-- The **Manage APIs** capability activated in Integration Suite.
+- The **Manage APIs** capability enabled in Integration Suite.
 - The API Management roles assigned to your user, for example **APIPortal.Administrator** and **APIManagement.SelfService.Administrator**.
-- Only **one API Management instance per subaccount** can be activated. If you need more, you need more subaccounts.
+- Only **one API Management instance can be activated per subaccount**. If you need more, you need more subaccounts.
 
 ## Part 1: free trial environment
 
@@ -48,21 +48,25 @@ In a trial environment the process is straightforward, because there is no need 
 
 ### Step 1. Locate the inactive runtime
 
-Go to **Settings > Runtimes** and open the **Classic API Management** tab. Its status is **Inactive** and the page shows the message "Activate API Management". Note the side menu: under **Discover** and **Design**, **APIs** does not appear yet.
+Go to **Settings > Runtimes** and open the **Classic API Management** tab. Its status is **Inactive** and the page shows the message "Activate API Management". Take a look at the side menu: there is still no **APIs** option.
 
-![Trial environment: Settings > Runtimes with Classic API Management in Inactive status and the Activate button at the top right](/images/blog/activar-api-management-integration-suite-01-runtime-inactivo-trial.png)
+![Trial environment: Classic API Management tab under Settings > Runtimes in Inactive status, with the Activate button at the top right and the Activate API Management message](/images/blog/activar-api-management-integration-suite-12-runtime-classic-apim-inactivo-trial.png)
 
 ### Step 2. Activate
 
-Click **Activate** (top right) and confirm. After a few minutes the status changes to **Active** with the message "Trial account has been provisioned successfully".
+Click **Activate** (top right) and confirm. The status changes to **In Progress** and the **Setup** window appears with the message "Your account is being provisioned, please wait...".
 
-Log out and log in again. **APIs** now appears in the menu (for example, under **Discover**) and you have access to **Configure > APIs**.
+![Trial environment: Classic API Management in In Progress status, with the Setup window and the message Your account is being provisioned, please wait](/images/blog/activar-api-management-integration-suite-13-runtime-in-progress-trial.png)
 
-![Trial environment: Classic API Management in Active status, with the message Trial account has been provisioned successfully and APIs in the Discover menu](/images/blog/activar-api-management-integration-suite-02-runtime-activo-trial.png)
+After a few minutes the status changes to **Active** with the message "Trial account has been provisioned successfully".
+
+Log out and log back in. **APIs** now appears in the menu (for example, under **Discover**) and you have access to **Configure > APIs**.
+
+![Trial environment: Classic API Management tab in Active status, with the message Trial account has been provisioned successfully and the side menu with Test, Configure, Analyze, Engage and Monetize](/images/blog/activar-api-management-integration-suite-14-runtime-classic-apim-activo-trial.png)
 
 ## Part 2: productive tenant
 
-In a productive tenant the screen is different: before activating, you have to configure the service. On top of that, there are decisions here that should not be taken lightly.
+In a productive tenant the screen is different: before activating, you have to configure the service. What is more, there are decisions here that should not be taken lightly.
 
 > **Before you press Activate in a customer tenant:** activation creates the productive API Management runtime and can have a cost impact. Ask the account owner for written authorization.
 
@@ -79,7 +83,7 @@ In **Settings > Runtimes > Classic API Management** (status **Inactive**), open 
 
 ![Productive tenant: Configure the API Management Service form with Account Type, Host Alias, Notification Contact and the API Portal administrator checkbox](/images/blog/activar-api-management-integration-suite-05-configurar-servicio-productivo.png)
 
-> **The Host Alias is the important decision.** It is the URL you will communicate to all consumers of your APIs. Choose a stable name that is consistent with your environment naming convention, because changing it later forces all consumers to change their configuration.
+> **The Host Alias is the important decision.** It is the URL you will communicate to all consumers of your APIs. Choose a stable name consistent with your environment naming convention, because changing it later forces all consumers to change their configuration.
 
 ### Step 2. Activate and confirm
 
@@ -97,7 +101,7 @@ The status changes to **In Progress** and SAP moves through three phases:
 
 ![Productive tenant: Classic API Management in In Progress status, with the Configuration phase completed and Testing the Setup and Release Notification pending](/images/blog/activar-api-management-integration-suite-07-aprovisionamiento-en-curso.png)
 
-In our case it took around a minute. When it finishes, the status is **Active**, the page shows **API Management Service Set Up Complete** and the three phases show **Success**.
+In our case it took around a minute. When it finishes, the status is **Active**, the page shows **API Management Service Set Up Complete** and the three phases indicate **Success**.
 
 ![Productive tenant: API Management Service Set Up Complete, with the Configuration, Testing the Setup and Release Notification phases in Success](/images/blog/activar-api-management-integration-suite-08-aprovisionamiento-completado.png)
 
@@ -111,7 +115,7 @@ On the same card, open **Connect** and press **Test Connection**. It should retu
 
 | | Trial | Production |
 |---|---|---|
-| Prior form | No | Yes: account type, Host Alias, contact and administrator |
+| Preliminary form | No | Yes: account type, Host Alias, contact and administrator |
 | Account type | Not selected | Production or Non Production |
 | Proxy host | Assigned by SAP | You define it with the Host Alias |
 | Visible provisioning phases (example proxy, email) | Not shown in our test | Yes |
