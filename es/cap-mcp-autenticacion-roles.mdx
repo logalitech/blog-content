@@ -1,0 +1,281 @@
+---
+title: "SAP CAP y MCP: autenticación y roles con @requires y @restrict"
+description: "Cómo restringir por rol qué consulta y qué escribe un agente de IA en un servicio SAP CAP publicado por MCP, y los tres huecos que aparecieron al probarlo."
+pubDate: 2026-10-23
+author: "Roger Alex Bostan"
+tags: ["SAP CAP", "MCP", "Agentes de IA", "Seguridad"]
+category: "SAP CAP MCP"
+draft: false
+lang: "es"
+translationKey: "cap-mcp-autenticacion-roles"
+---
+
+La [segunda parte de esta serie](/blog/cap-mcp-escritura-acciones-cds/) dejó una acción de escritura que funcionaba, pero con un límite claro: todas las llamadas llegaban como `anonymous`, y cualquier cliente que alcanzara el puerto podía modificar el stock. Esta tercera parte restringe quién puede consultar y quién puede llamar a la acción, con `@requires` y `@restrict`, en el mismo servicio SAP CAP publicado por MCP que se montó en la [primera parte](/blog/cap-mcp-servidor-agentes-ia/).
+
+Con tres anotaciones, lectura y escritura quedaron separadas por rol, tanto por MCP como por OData. Las pruebas también mostraron tres huecos que no se ven en la configuración:
+
+1. **La autenticación simulada de CAP acepta usuarios que no existen.** Con la configuración por defecto, `@requires: 'authenticated-user'` dejaba pasar a cualquier nombre de usuario.
+2. **`@restrict` en una entidad no protege el acceso a través de una asociación.** Un usuario sin permiso sobre `Productos` leyó su stock y su precio desde `Categorias`.
+3. **Para el agente, «no autorizado» se parece a «no existe».** El plugin oculta lo que el usuario no puede usar, y los mensajes son los de un elemento inexistente.
+
+Todas las pruebas se hicieron en local, el 23-10-2026, sobre el mismo proyecto de las partes anteriores, con la autenticación simulada (`mocked`) de CAP y con usuarios y datos inventados.
+
+## Entorno de la prueba
+
+Las versiones son las mismas que en las partes 1 y 2: Node.js 24.19.0, `@sap/cds-dk` 10.1.2, `@sap/cds` 10.1.1, `@cap-js/mcp` 1.5.0, `@cap-js/sqlite` 3.1.1 y Claude Code 2.1.276.
+
+Las trazas y las duraciones proceden de ejecuciones de Claude Code desde la línea de comandos con el modelo `claude-sonnet-5`. Las capturas son de una segunda ejecución con las mismas preguntas en la extensión de Claude Code para Visual Studio Code, con el modelo Opus 5.5 (esfuerzo «Medium») y el modo de permisos «Manual». La documentación oficial del plugin es la guía [Model Context Protocol Adapter](https://cap.cloud.sap/docs/guides/ai/cap-mcp).
+
+## Autenticación y roles en el servicio
+
+### Usuarios simulados
+
+Con la autenticación `mocked`, los usuarios, sus contraseñas y sus roles se declaran en `package.json`. Esta es la versión final de la prueba:
+
+```json
+"cds": {
+  "mcp": { "autowire": false },
+  "requires": {
+    "auth": {
+      "kind": "mocked",
+      "users": {
+        "ana": { "password": "demo-ana", "roles": ["Lector"] },
+        "bruno": { "password": "demo-bruno", "roles": ["Lector", "Almacen"] },
+        "carla": { "password": "demo-carla", "roles": [] },
+        "alice": false, "bob": false, "carol": false, "dave": false,
+        "erin": false, "fred": false, "me": false, "yves": false,
+        "*": false
+      }
+    }
+  }
+}
+```
+
+| Usuario | Roles | Qué debe poder hacer |
+|---|---|---|
+| `ana` | `Lector` | Consultar productos y categorías |
+| `bruno` | `Lector`, `Almacen` | Consultar y registrar entradas |
+| `carla` | ninguno | Solo consultar categorías |
+
+La primera versión solo declaraba `ana`, `bruno` y `carla`. Las líneas de `alice` a `"*": false` se añadieron después del primer hallazgo, que se explica más adelante.
+
+### Tres anotaciones en el servicio
+
+```cds
+using { demo.almacen as db } from '../db/schema';
+
+@protocol: ['odata', 'mcp']
+@requires: 'authenticated-user'
+service CatalogService {
+  @readonly
+  @restrict: [{ grant: 'READ', to: ['Lector', 'Almacen'] }]
+  entity Productos  as projection on db.Productos;
+
+  @readonly entity Categorias as projection on db.Categorias excluding { productos };
+
+  @requires: 'Almacen'
+  @description: 'Registra una entrada de mercancía: suma unidades recibidas al stock de un producto. No fija el stock a un valor ni resta unidades.'
+  action registrarEntrada(
+    @mandatory @description: 'ID del producto (campo ID de Productos)'
+    producto : UUID,
+    @mandatory @description: 'Unidades recibidas: número entero entre 1 y 1000'
+    unidades : Integer
+  ) returns Productos;
+}
+
+annotate CatalogService with @mcp.instructions: '...'; // sin cambios respecto a la parte 2
+```
+
+Las anotaciones nuevas son tres:
+
+- `@requires: 'authenticated-user'` en el servicio: sin credenciales válidas no se accede a nada.
+- `@restrict` de lectura en `Productos`: solo los roles `Lector` y `Almacen` pueden leerla.
+- `@requires: 'Almacen'` en la acción: solo ese rol puede registrar entradas.
+
+El handler `srv/catalog-service.js` de la parte 2 no cambia. La primera versión del servicio no tenía `excluding { productos }` en `Categorias`: se añadió después del segundo hallazgo.
+
+### Conectar el agente con credenciales
+
+`.mcp.json` admite cabeceras. Para cada usuario se preparó un fichero con su cabecera `Authorization` de tipo Basic y el mismo nombre de servidor, `almacen`. El de `bruno`:
+
+```json
+{
+  "mcpServers": {
+    "almacen": {
+      "type": "http",
+      "url": "http://localhost:4004/mcp/catalog",
+      "headers": { "Authorization": "Basic YnJ1bm86ZGVtby1icnVubw==" }
+    }
+  }
+}
+```
+
+La cadena es `bruno:demo-bruno` en Base64: una codificación, no un cifrado. Son contraseñas de usuarios simulados para pruebas en local. En la captura 03 se taparon por la norma de capturas del blog; en el texto se muestran porque son de demostración y hacen falta para reproducir la prueba.
+
+## Qué ve cada usuario por MCP
+
+El plugin filtra las herramientas, las entidades y las acciones según el usuario de cada petición. La lógica está en `lib/auth.js` del paquete (`checkServiceAccess`, `getAccessibleEntities` y `getAccessibleActions`):
+
+| Petición | Anónimo | `ana` | `bruno` | `carla` |
+|---|---|---|---|---|
+| `initialize` y `tools/list` | 401 | 200 | 200 | 200 |
+| Herramientas | ninguna | `describe`, `query` | `describe`, `query`, `call` | `describe`, `query` |
+| Entidades en `describe` | | `Productos`, `Categorias` | `Productos`, `Categorias` | `Categorias` |
+| Acciones en `describe` | | ninguna | `registrarEntrada` | ninguna |
+
+Al anónimo, el servidor responde con HTTP 401 y el mensaje «Authorization error (401): Not authorized to access CatalogService.»
+
+```mermaid
+flowchart TB
+  A["Petición al servidor MCP"] --> B{"¿Credenciales válidas?"}
+  B -->|"No"| C["401: sin herramientas"]
+  B -->|"Sí"| D["El plugin filtra por roles"]
+  D --> E["ana: describe y query"]
+  D --> F["bruno: describe, query y call"]
+  D --> G["carla: solo Categorias"]
+```
+
+### Llamadas según el rol
+
+Las mismas restricciones se comprobaron con llamadas directas, por MCP y por OData:
+
+| Prueba | Resultado |
+|---|---|
+| `call` como `ana` o como `carla` | «Tool call not found»: la herramienta no existe para ellas |
+| `call` como `bruno` | Correcto: stock 10 y `modifiedBy: bruno` |
+| `query` a `Productos` como `carla` | «Entity 'Productos' cannot be resolved for service CatalogService. Use describe to see available entities.» |
+| `query` a `Productos` como `ana`, después de la llamada de `bruno` | Base USB-C con stock 10 y `modifiedBy: bruno` |
+| OData: acción `registrarEntrada` como `ana` | 403 Forbidden |
+| OData: acción `registrarEntrada` como `bruno` | Correcta |
+| OData: `GET Productos` como `carla` | 403 Forbidden |
+| OData: `PATCH Productos` como `bruno` | 405, «Entity "CatalogService.Productos" is read-only» |
+
+A diferencia de la parte 2, `modifiedBy` registra ahora al usuario real. `createdBy` sigue siendo `anonymous` en todos los productos, porque corresponde a la carga inicial de los CSV, no a las llamadas.
+
+## Primer hallazgo: la autenticación simulada acepta usuarios que no existen
+
+Con la primera versión de `package.json`, que solo declaraba `ana`, `bruno` y `carla`:
+
+| Credenciales | Resultado |
+|---|---|
+| `zoe` (no existe), con cualquier contraseña | 200: autenticada. Ve `describe`, `query` y la entidad `Categorias` |
+| `alice`, sin contraseña | 200: igual que `zoe` |
+| `ana`, con una contraseña incorrecta | 401 |
+
+La causa está en el código de `@sap/cds` 10.1.1:
+
+- `lib/env/cds-requires.js`: la estrategia `mocked` trae por defecto los usuarios `alice`, `bob`, `carol`, `dave`, `erin`, `fred`, `me` e `yves`, sin contraseña, y una entrada `'*': true`.
+- `lib/srv/middlewares/auth/mocked-users.js`, función `verify`: si el usuario no existe y está la entrada `'*'`, lo acepta con cualquier contraseña.
+- Los usuarios declarados en `package.json` se suman a los de por defecto.
+
+En esta prueba, `@requires: 'authenticated-user'` dejaba pasar a cualquier nombre de usuario. Los roles sí seguían protegiendo `Productos` y la acción, porque ni `zoe` ni `alice` tenían `Lector` ni `Almacen`.
+
+La corrección aplicada fue la del bloque anterior: `"*": false` y cada usuario por defecto a `false`. Después, `zoe`, `alice` y `ana` con una contraseña incorrecta recibieron 401.
+
+## Segundo hallazgo: @restrict no protege el acceso a través de una asociación
+
+En la primera versión del servicio, `Categorias` exponía su asociación `productos`. `carla`, sin acceso a `Productos`, probó varias vías:
+
+| Vía | Resultado |
+|---|---|
+| MCP `query` con expresión de ruta | **200: nombre, stock y precio de los 7 productos** |
+| MCP `query` con expand | Rechazada: «Cannot expand into inaccessible entity via 'productos'. The target entity is restricted.» |
+| OData `$expand=productos` | **200, con el nombre y el stock de los productos** |
+| OData `$filter=productos/any(...)` | **200: revela qué categorías tienen productos con stock bajo** |
+| OData `GET Productos` directo | 403 |
+
+La consulta MCP que devolvió los datos fue esta:
+
+```sql
+SELECT nombre as categoria, productos.nombre as producto, productos.stock as stock, productos.precio as precio FROM Categorias
+```
+
+Por OData, las peticiones fueron `Categorias?$expand=productos($select=nombre,stock)&$top=1`, que devolvió la primera categoría con sus dos productos y su stock, y `Categorias?$filter=productos/any(p:p/stock lt 4)`, que devolvió Portátiles y Monitores.
+
+El plugin bloquea el expand, pero no la expresión de ruta. Por OData, CAP dejó pasar tanto el expand como el filtro. En esta prueba, `@restrict` en `Productos` protegió el acceso directo a la entidad, pero no el acceso a través de la asociación desde una entidad sin restricción.
+
+La corrección aplicada fue no exponer la asociación en el servicio: `Categorias ... excluding { productos }`. Después:
+
+- `describe` de `Categorias` para `carla` solo muestra `ID` y `nombre`;
+- la expresión de ruta falla: «"productos" not found in the elements of "CatalogService.Categorias"»;
+- OData `$expand=productos` devuelve 400: «Navigation property "productos" is not defined in CatalogService.Categorias»;
+- `ana` sigue pudiendo usar la ruta en el otro sentido, `categoria.nombre` desde `Productos`.
+
+Otras correcciones posibles, como restringir también `Categorias`, no se probaron.
+
+## El agente con cada usuario
+
+Desde la línea de comandos se usó un fichero de configuración por usuario, con `--mcp-config` y `--strict-mcp-config`. Todas las herramientas del servidor se autorizaron en el cliente con `--allowedTools`: lo que se prueba es lo que permite el servidor. La base de datos se recargó antes de cada pregunta, con la Base USB-C en stock 0.
+
+### ana, con rol Lector
+
+«La Base USB-C ha recibido 10 unidades. Actualiza su stock a 10.»
+
+El agente solo tenía `describe` y `query`. Buscó una herramienta para `registrarEntrada`, no la encontró y respondió: «Solo dispongo de herramientas de lectura (`describe` y `query`, que solo admite SELECT) para el servidor de almacén; no hay una herramienta para ejecutar la acción `registrarEntrada`, que es la única forma permitida de modificar el stock.» Confirmó el stock (0) y no escribió. El servidor no recibió ningún `call`. Tardó 17,6 s.
+
+En la ejecución de Visual Studio Code, la respuesta fue similar y añadió dos vías: habilitar la acción en el servidor MCP o llamarla directamente por OData con un `POST`.
+
+![Claude Code en Visual Studio Code, conectado como ana, consulta la Base USB-C con stock 0 y explica que solo puede leer datos porque la acción registrarEntrada no aparece entre sus herramientas](/images/blog/cap-mcp-autenticacion-roles-01-ana-sin-escritura.png)
+
+**La vía por OData no funciona para `ana`:** la llamada directa a la acción como `ana` devolvió 403. El agente no identificó que fuera una cuestión de permisos.
+
+### bruno, con roles Lector y Almacen
+
+La misma petición. El agente usó `describe`, `query` y `call`, con 10 unidades, y respondió: «Stock de **Base USB-C** actualizado: 0 → 10 unidades.» El resultado de la acción registró `modifiedBy: bruno`. Tardó 9,5 s.
+
+![Claude Code en Visual Studio Code, conectado como bruno, consulta el stock de la Base USB-C y llama a la acción registrarEntrada con 10 unidades](/images/blog/cap-mcp-autenticacion-roles-02-bruno-registra-entrada.png)
+
+En la ejecución de Visual Studio Code, una consulta posterior confirmó el stock 10 con `modifiedBy: bruno`.
+
+### carla, sin roles
+
+«¿Qué productos tienen el stock por debajo del mínimo?»
+
+`describe` solo le mostró `Categorias`. El agente probó `SELECT * FROM Productos`, `SELECT * FROM Articulos` y `SELECT * FROM CatalogService.Productos`, y las tres respondieron «cannot be resolved». Su respuesta: «El servicio `CatalogService` del almacén solo expone la entidad **Categorias** (Portátiles, Periféricos, Monitores), no hay una entidad de Productos accesible con datos de stock, a pesar de que las instrucciones del servidor mencionan niveles de stock y la acción `registrarEntrada`.» Preguntó si los productos no estarían cargados o expuestos, sin identificar que fuera un problema de permisos. Tardó 21,3 s.
+
+En una sola ejecución con la primera versión del servicio, la que exponía la asociación, el agente la buscó aunque `describe` no se la mostraba. Probó una consulta que mezclaba expresión de ruta y expand, que falló por sintaxis, después el expand, que el plugin bloqueó, y `FROM Categorias.productos`, que no se resolvió. En esa ejecución no obtuvo datos de productos y tardó 30,9 s.
+
+En la ejecución de Visual Studio Code, también una sola, el agente usó además las herramientas de ficheros del editor. Después de dos llamadas a `describe`, buscó en los ficheros `.cds` y leyó en `srv/catalog-service.cds` la restricción de `Productos`; luego buscó usuarios y roles en `package.json`, donde vio que `carla` no tiene roles, y por último buscó `almacen` en `.mcp.json`, donde decodificó la cabecera de `carla`. La captura empieza en esta última búsqueda: los pasos anteriores no aparecen en ella. Respondió que la restricción funcionaba como se diseñó y que no había intentado saltársela leyendo directamente los CSV. A continuación, **propuso conectarse como `ana` o como `bruno` y mostró sus cabeceras `Authorization`**, construidas a partir de las contraseñas de `package.json`. En la captura, esas credenciales están tapadas.
+
+![Claude Code en Visual Studio Code, conectado como carla, explica que no tiene acceso a los productos porque carla no tiene roles, con las credenciales de las cabeceras tapadas](/images/blog/cap-mcp-autenticacion-roles-03-carla-sin-acceso.png)
+
+En esta ejecución, el agente respetó la restricción del servidor y, en la misma respuesta, ofreció las credenciales de otro usuario con más permisos. Los roles protegen el servidor, pero los usuarios simulados y sus contraseñas estaban en `package.json`, dentro del mismo proyecto en el que trabajaba el agente.
+
+### Sin credenciales
+
+Con un `.mcp.json` sin cabeceras, Claude Code marcó el servidor `almacen` como fallido y el agente no tuvo herramientas. Respondió que el servidor había fallado al conectarse, con un «HTTP 404 en `/register`», sin mencionar la autenticación. Tardó 3,6 s.
+
+La respuesta 401 del plugin no incluye la cabecera `WWW-Authenticate`, y el servidor responde 404 en `/.well-known/oauth-protected-resource`, `/.well-known/oauth-authorization-server` y `/register`.
+
+## Tercer hallazgo: «no autorizado» se parece a «no existe»
+
+El plugin oculta lo que el usuario no puede usar, y eso tiene una consecuencia en lo que ve el agente:
+
+- `call` no aparece en `tools/list` para quien no tiene el rol de la acción. Si se invoca igualmente, el error es «Tool call not found», no un error de autorización.
+- Una entidad sin permiso de lectura no aparece en `describe`, y `query` responde «cannot be resolved»: el mismo mensaje que para una entidad inexistente, como `Articulos` en la prueba de `carla`.
+- Las instrucciones del servidor (`@mcp.instructions`) son las mismas para todos los usuarios: también a `ana` y a `carla` les hablan del stock y de la acción `registrarEntrada`.
+- Sin credenciales, el agente informó de un fallo de conexión.
+
+En la prueba de `carla` desde la línea de comandos y en la prueba sin credenciales, el agente no identificó la falta de permisos. En la ejecución de Visual Studio Code con `carla` la dedujo, pero leyendo los ficheros del proyecto, no a partir de lo que devolvió el servidor.
+
+## Límites de esta tercera parte
+
+- **Autenticación simulada.** Todo se probó con la estrategia `mocked` de CAP, en local. La autenticación real (XSUAA o IAS) y el despliegue en SAP BTP quedan fuera de esta parte.
+- **Sin restricciones por instancia.** No se probó `@restrict` con `where`.
+- **Una sola corrección del segundo hallazgo.** Se cerró sin exponer la asociación; otras formas, como restringir también `Categorias`, no se probaron.
+- **Observaciones de una sola ejecución.** La de `carla` con la primera versión del servicio y la de `carla` en Visual Studio Code se hicieron una vez cada una.
+
+## Conclusiones
+
+Las tres anotaciones separaron lectura y escritura por rol en el servicio SAP CAP publicado por MCP. Por MCP, `call` solo existe para `bruno` y `Productos` solo para `ana` y `bruno`; por OData, la acción da 403 a `ana` y `Productos` da 403 a `carla`. `modifiedBy` registra al usuario real.
+
+Las anotaciones no bastaron por sí solas. En esta prueba hicieron falta dos correcciones más:
+
+1. Cerrar los usuarios por defecto de la autenticación simulada (`"*": false` y cada usuario de ejemplo a `false`), porque `authenticated-user` dejaba pasar a cualquier nombre.
+2. No exponer en `Categorias` la asociación con `Productos` (`excluding { productos }`), porque `@restrict` no protegía el acceso a través de ella.
+
+Y queda un efecto que en esta prueba no se corrigió: para el agente, lo que no está autorizado se presenta igual que lo que no existe.
+
+La formación completa de CAP está en el [curso de SAP CAP de Logali Tech](/courses/sap-cap-cloud-application-programming-model/).
+
+**En la parte 4:** autenticación real en SAP BTP. A partir de los límites de esta parte, se sustituye la autenticación simulada por XSUAA o IAS y las credenciales dejan de estar en el proyecto.
