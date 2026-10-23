@@ -2,6 +2,7 @@
 title: "SAP Integration Suite: activar el runtime de API Management"
 description: "API Management activado en SAP Integration Suite, pero sin Configure > APIs. Por qué falta el runtime y cómo activarlo en un trial y en un tenant productivo."
 pubDate: 2026-10-23
+updatedDate: 2026-10-23
 author: "Ioan Hadarau"
 tags: ["SAP Integration Suite", "SAP API Management", "SAP BTP"]
 category: "BAIP IS"
@@ -13,6 +14,8 @@ translationKey: "activar-api-management-integration-suite"
 Has activado la capacidad de API Management en tu tenant de SAP Integration Suite. En **Manage Capabilities** aparece como activa, tienes los roles asignados y, aun así, en el menú no hay ni rastro de **Configure > APIs**. No puedes crear un API Proxy, ni un Key Value Map, ni un API Provider.
 
 En la página de inicio de Integration Suite, la tarjeta **Manage APIs** está, pero sin ningún enlace, mientras que el resto de capacidades sí los tienen (**Discover Integrations**, **Configure Events**, **Manage Trading Partners**...). Y esto ocurre **aunque ya te hayas asignado todos los roles de API Management** (**APIPortal.Administrator**, **APIManagement.SelfService.Administrator**...): puedes cerrar sesión, volver a entrar y revisar las role collections, y la opción sigue sin aparecer.
+
+![Página de inicio de Integration Suite en un entorno trial: la tarjeta Manage APIs aparece sin enlaces porque el runtime de API Management no está activado](/images/blog/activar-api-management-integration-suite-10-inicio-manage-apis-sin-enlaces-trial.png)
 
 No es un problema de permisos, ni de caché del navegador, ni de roles. Falta un paso que es fácil pasar por alto: **activar el runtime de API Management**. En este artículo explicamos por qué ocurre y cómo se resuelve, primero en un entorno de prueba gratuito (trial) y después en un tenant productivo, donde el proceso pide algunas decisiones más. Todos los pasos se comprobaron el 23 de octubre de 2026.
 
@@ -28,6 +31,8 @@ En SAP Integration Suite hay que distinguir dos cosas:
 Activar la capacidad no crea el runtime. Mientras la pestaña **Classic API Management** de **Settings > Runtimes** está en **Inactive**, no existe ningún tenant de API Management detrás de la interfaz. Por eso Integration Suite no muestra **Configure > APIs**: no habría dónde guardar ni desplegar lo que crearas. La tarjeta **Manage APIs** de la página de inicio puede aparecer incluso sin enlaces.
 
 Cuando el runtime pasa a **Active**, el menú se completa con las opciones de API Management (**Configure > APIs**, **Discover > APIs**, **Test**, **Analyze**, **Engage**, **Monetize**). La tarjeta **Manage APIs** de la página de inicio también cambia: ahora muestra los enlaces **Discover APIs** y **Configure APIs**, y en el menú lateral aparece **Configure > APIs**.
+
+![Página de inicio en un entorno trial después de activar el runtime: la tarjeta Manage APIs ya muestra Discover APIs y Configure APIs](/images/blog/activar-api-management-integration-suite-11-inicio-manage-apis-con-enlaces-trial.png)
 
 Ocurre igual con Cloud Integration: su runtime es la pestaña **Integration Cell**, que normalmente ya está activa. Por eso la diferencia solo se nota con API Management.
 
@@ -72,11 +77,15 @@ En **Settings > Runtimes > Classic API Management** (estado **Inactive**), abre 
 | **Notification Contact** | Un buzón que vaya a seguir existiendo, mejor del equipo que del consultor |
 | **Make ... the API Portal administrator** | Marca la casilla para que tu usuario quede como administrador del API Portal |
 
+![Tenant productivo: formulario Configure the API Management Service con Account Type, Host Alias, Notification Contact y la casilla de administrador del API Portal](/images/blog/activar-api-management-integration-suite-05-configurar-servicio-productivo.png)
+
 > **El Host Alias es la decisión importante.** Es la URL que vas a comunicar a todos los consumidores de tus APIs. Elige un nombre estable y coherente con tu convención de entornos, porque cambiarlo después obliga a todos los consumidores a cambiar su configuración.
 
 ### Paso 2. Activar y confirmar
 
 Pulsa **Activate**. Aparece la ventana **Set-up Confirmation** con el resumen: tipo de cuenta, Host Alias, formato de la URL de los proxies y contacto. Revísalo con calma y pulsa **Confirm**.
+
+![Tenant productivo: ventana Set-up Confirmation con Account Type Production y los botones Confirm y Close](/images/blog/activar-api-management-integration-suite-06-set-up-confirmation.png)
 
 ### Paso 3. Esperar al aprovisionamiento
 
@@ -86,11 +95,17 @@ El estado pasa a **In Progress** y SAP avanza por tres fases:
 2. **Testing the Setup**: despliega un API Proxy de ejemplo y lanza pruebas de humo.
 3. **Release Notification**: envía un correo de confirmación al contacto que indicaste.
 
+![Tenant productivo: Classic API Management en estado In Progress, con la fase Configuration terminada y Testing the Setup y Release Notification pendientes](/images/blog/activar-api-management-integration-suite-07-aprovisionamiento-en-curso.png)
+
 En nuestro caso tardó alrededor de un minuto. Al terminar, el estado es **Active**, la página muestra **API Management Service Set Up Complete** y las tres fases indican **Success**.
+
+![Tenant productivo: API Management Service Set Up Complete, con las fases Configuration, Testing the Setup y Release Notification en Success](/images/blog/activar-api-management-integration-suite-08-aprovisionamiento-completado.png)
 
 ### Paso 4. Verificar la conexión
 
 En la misma tarjeta, abre **Connect** y pulsa **Test Connection**. Debe devolver **Success** y mostrar la URL del Developer Hub. Recarga la página: el menú lateral ya incluye **Configure > APIs**, **Analyze**, **Engage** y **Monetize**.
+
+![Tenant productivo: Classic API Management en estado Active, pestaña Connect con el botón Test Connection y el menú lateral con Analyze, Engage y Monetize](/images/blog/activar-api-management-integration-suite-09-connect-test-connection.png)
 
 ## Diferencias entre trial y productivo
 
