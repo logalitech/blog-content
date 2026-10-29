@@ -1,9 +1,9 @@
 ---
-# origen: es/xsuaa-rotacion-claves-api-management.mdx@98e2a9eb6de17b57ce2b1a038668816364906935 (versión generada desde el artículo en español; no editar este fichero)
+# origen: es/xsuaa-rotacion-claves-api-management.mdx@3026a0d8398d57b6f9ff2a18333f54bebda9a348 (versión generada desde el artículo en español; no editar este fichero)
 title: "SAP API Management: when XSUAA rotates its signing key"
 description: "XSUAA rotates its signing key and SAP API Management proxies with the fixed key in a KVM return 401. How to diagnose it and resolve the key by kid."
 pubDate: 2026-10-29
-updatedDate: 2026-10-29
+updatedDate: 2026-10-30
 author: "Ioan Hadarau"
 tags: ["SAP API Management", "XSUAA", "JWT"]
 category: "BAIP IS"
@@ -11,7 +11,7 @@ draft: false
 lang: "en"
 translationKey: "xsuaa-rotacion-claves-api-management"
 ---
-One fine day, without anyone having deployed anything, all your SAP API Management API Proxies start rejecting requests with a 401. The token is obtained without any problem, the client certificate is valid, the scope is correct... and even so:
+An ordinary day, with no one having deployed anything, and all your SAP API Management API Proxies suddenly start rejecting requests with a 401. The token is obtained without any problem, the client certificate is valid, the scope is correct... and yet:
 
 ```json
 {
@@ -28,21 +28,21 @@ One fine day, without anyone having deployed anything, all your SAP API Manageme
 
 It happened to me on a real project with four proxies (SOAP and OData) protected with XSUAA JWT. All four went down at once. In this article I explain what was behind it, how to diagnose it in five minutes and how to redesign the validation so that the next key rotation does not affect you. It is the third part of the series on SAP API Management, after [TLS ciphers](/en/blog/sap-api-management-tls-ciphers-changing/) and [enabling the API Management runtime](/en/blog/sap-integration-suite-enabling-api-management-runtime/).
 
-## Before we start: what is XSUAA
+## Before you start: what XSUAA is
 
-**XSUAA** (Extended Services for User Account and Authentication) is the OAuth 2.0 authorization server of SAP BTP in the Cloud Foundry environment. In the BTP Cockpit it appears as the **Authorization and Trust Management** service.
+**XSUAA** (Extended Services for User Account and Authentication) is the OAuth 2.0 authorization server for SAP BTP in the Cloud Foundry environment. In the BTP Cockpit it appears as the **Authorization and Trust Management** service.
 
 Its role is to issue and back the tokens that protect the applications and APIs of a subaccount:
 
-- **It issues JWT tokens.** When an application or an external system authenticates (with a user through an Identity Provider, or without a user via client credentials), XSUAA returns an access token in JWT format.
+- **It issues JWT tokens.** When an application or an external system authenticates (with a user through an Identity Provider, or without a user using client credentials), XSUAA returns an access token in JWT format.
 - **It signs those tokens** with an RSA private key (RS256 algorithm). Whoever receives the token validates it with the corresponding public key.
 - **It defines what each consumer can do.** The scopes, role templates and authorities are declared in the security descriptor (`xs-security.json`). The token includes the granted scopes, and the API checks them.
 - **It delivers the credentials to each client** through service keys: `clientid` and `clientsecret`, or an x509 certificate if mTLS is used.
 - **It publishes its public keys** at the `/token_keys` endpoint (a JWKS), so that anyone can verify the signature of its tokens.
 
-Each subaccount has its own identity zone, with URLs of the type `https://<subdominio>.authentication.<región>.hana.ondemand.com`. From there come the token endpoint (`/oauth/token`), the JWKS (`/token_keys`) and the `issuer` that appears inside each JWT. If you want to see XSUAA from an application's side, [this article on authentication in CAP](/en/blog/cap-auth-xsuaa/) explains how it is configured.
+Each subaccount has its own identity zone, with URLs of the form `https://<subdominio>.authentication.<región>.hana.ondemand.com`. From there come the token endpoint (`/oauth/token`), the JWKS (`/token_keys`) and the `issuer` that appears inside each JWT. If you want to see XSUAA from an application's point of view, [this article on authentication in CAP](/en/blog/cap-auth-xsuaa/) explains how it is configured.
 
-In short: **XSUAA issues and signs the token, and your API Proxy has to verify that signature.** To verify it, it needs the correct public key, and that is where the problem covered in this article begins.
+In short: **XSUAA issues and signs the token, and your API Proxy has to verify that signature.** To verify it, it needs the correct public key, and that is where the problem this article deals with begins.
 
 ## The scenario
 
@@ -100,11 +100,11 @@ In my case the sequence was this (relative dates):
 
 The KVM still held the **old** key. Every new token came signed with the **new** key. **VerifyJWT** compared the signature against the wrong key and rejected it. No deployment or configuration change on our side: the world had simply changed underneath the proxy.
 
-The key validity dates I observed match that pattern: each key had a lifetime of about four months, with roughly one month of overlap with the next one. Do not take this as a documented rule; take it as a sign that **it is going to happen again**.
+The key validity dates I observed fit that pattern: each key had a lifetime of about four months, with around one month of overlap with the next one. Do not take this as a documented rule; take it as a sign that **it is going to happen again**.
 
 ## What a rotation looks like, phase by phase
 
-The rotation is executed by SAP in XSUAA: I found no option in the subaccount to trigger it or delay it. What you can do is **observe it** at the `/token_keys` endpoint and know which phase you are in. These are the four phases I saw, and what the JWKS shows in each one:
+The rotation is executed by SAP in XSUAA: I did not find any option in the subaccount to trigger it or delay it. What you can do is **observe it** at the `/token_keys` endpoint and know which phase you are in. These are the four phases I saw, and what the JWKS shows in each one:
 
 | Phase | What XSUAA does | What `/token_keys` shows | Fixed key in the KVM | Dynamic JWKS |
 |---|---|---|---|---|
@@ -140,7 +140,7 @@ sequenceDiagram
 
 Two practical consequences:
 
-- **Phase 2 is your warning window.** If you see two keys in `/token_keys`, the signing switch is near. With a fixed key, that is the moment to update the KVM without rushing.
+- **Phase 2 is your warning window.** If you see two keys in `/token_keys`, the signing change is near. With a fixed key, that is the moment to update the KVM without rushing.
 - **Tokens already issued remain valid** until they expire (usually about 12 hours), even if XSUAA is already signing with the new key. That is why the cutover is not always instantaneous: consumers that reuse their token take a little longer to fail.
 
 ## Five-minute diagnosis
@@ -177,7 +177,7 @@ curl https://<subdominio>.authentication.<región>.hana.ondemand.com/token_keys
 
 If you see **two** keys, you are in the middle of a rotation. Check that your token's `kid` is in the list: that is the right key. While I was preparing this article, on October 29, 2026, the JWKS of my test subaccount showed exactly two keys:
 
-![Response from the XSUAA token_keys endpoint with two RSA keys, each with its kid, in the middle of a rotation](/images/blog/xsuaa-rotacion-claves-api-management-02-token-keys-dos-claves.png)
+![Response from the XSUAA token_keys endpoint with two RSA keys, each with its own kid, in the middle of a rotation](/images/blog/xsuaa-rotacion-claves-api-management-02-token-keys-dos-claves.png)
 
 A useful detail: in the XSUAA JWKS, each key includes a `value` field with the public key already in PEM format (with its `BEGIN PUBLIC KEY` and `END PUBLIC KEY` headers). There is no need to rebuild it from the modulus and the exponent.
 
@@ -199,9 +199,9 @@ This is the complete manual procedure, to restore the service in minutes if your
 
 **Step 2. Download the JWKS.** Open `https://<subdominio>.authentication.<región>.hana.ondemand.com/token_keys` in the browser or with curl. It does not require authentication.
 
-**Step 3. Locate the new key.** Look in the `keys` array for the element whose `kid` is the one in the token. Copy its full `value` field, from `-----BEGIN PUBLIC KEY-----` to `-----END PUBLIC KEY-----`, with no spaces added at the beginning or at the end.
+**Step 3. Locate the new key.** Look in the `keys` array for the element whose `kid` is the one in the token. Copy its full `value` field, from `-----BEGIN PUBLIC KEY-----` to `-----END PUBLIC KEY-----`, with no spaces added at the beginning or the end.
 
-**Step 4. Save the old key.** Before touching anything, copy the current value of `publickey` from the KVM to a local file. It is your way back if you pick the wrong key.
+**Step 4. Save the old key.** Before touching anything, copy the current value of `publickey` from the KVM to a local file. It is your rollback if you pick the wrong key.
 
 **Step 5. Edit the KVM.** In Integration Suite: **Configure > APIs > Key Value Maps**, open the KVM (in my case `XSUAA_Blog`), edit the `publickey` entry and paste the new PEM. If the KVM is encrypted, the value is not displayed after saving: this is normal.
 
@@ -213,15 +213,15 @@ This is the complete manual procedure, to restore the service in minutes if your
 
 **Step 8. Test all the proxies.** If several proxies share the KVM, test each one. If any of them is still failing, check that it reads the same KVM and the same entry.
 
-**Step 9. Keep a record.** Note the date, the old and new `kid`, and the expiry date of the new key if you know it. It will help you anticipate the next rotation.
+**Step 9. Document it.** Note the date, the old and new `kid`, and the expiry date of the new key if you know it. It will help you anticipate the next rotation.
 
 This resolves the incident, but it is **manual and reactive**. In a few months it will happen again, probably at the worst possible moment (in my project, the next expiry coincided with an end-user training phase).
 
-## Definitive solution: resolve the key dynamically from the JWKS
+## Definitive solution: resolving the key dynamically from the JWKS
 
 The idea is simple: instead of storing **a** fixed key, the proxy reads the `kid` from the token, looks up that key in the XSUAA JWKS and caches it.
 
-> **Note:** many gateways let you specify a JWKS URL directly in the verification policy. In the tenant I worked with, **VerifyJWT** only accepted the public key by reference (`Value ref`), so the dynamic resolution had to be built with policies. Check what your version supports before replicating this design.
+> **Note:** many gateways let you specify a JWKS URL directly in the verification policy. In the tenant I worked with, **VerifyJWT** only accepted the public key by reference (`Value ref`), so dynamic resolution had to be built with policies. Check what your version supports before replicating this design.
 
 ### The new ProxyEndpoint PreFlow
 
@@ -329,7 +329,7 @@ lookupcache.LookupCache_JWKS.cachehit == false OR lookupcache.LookupCache_JWKS.c
 </ServiceCallout>
 ```
 
-The ServiceCallout URL goes in as literal text: that is the form the tenant accepts without problems on import. The `jwks_uri` from the KVM remains as a configuration reference, useful for the operations checklist.
+The ServiceCallout URL goes in as literal text: that is the form the tenant accepts without issues on import. The `jwks_uri` from the KVM remains as a configuration reference, useful for the operations checklist.
 
 ### 5. Select the right key
 
@@ -391,25 +391,23 @@ The verification policy barely changes: the variable is now populated dynamicall
 |---|---|---|
 | Normal case (the kid's key is already cached) | Verifies directly | Practically zero |
 | First request or expired cache | Downloads the JWKS, stores the key and verifies | One HTTP call to XSUAA per hour at most |
-| XSUAA rotates the key | The first token with the new kid is not in the cache: the JWKS is downloaded and it resolves on its own | Transparent to the consumer |
-| Token with a made-up kid | The kid is not in the JWKS: the JavaScript cuts the request | Immediate rejection (500, see note) |
+| XSUAA rotates the key | The first token with the new kid is not in the cache: the JWKS is downloaded and resolved automatically | Transparent to the consumer |
+| Token with a made-up kid | The kid is not in the JWKS: the JavaScript rejects the request | Immediate rejection (500, see note) |
 
 The clearest proof: the **same token** that the proxy with a fixed key rejects with 401 is accepted by the proxy with dynamic JWKS, without touching any configuration.
 
-![Postman with the 200 OK response from the proxy with dynamic JWKS, using the same token that returns 401 in the proxy with a fixed key](/images/blog/xsuaa-rotacion-claves-api-management-06-postman-200.png)
+![Postman showing the 200 OK response from the proxy with dynamic JWKS, using the same token that returns 401 on the proxy with a fixed key](/images/blog/xsuaa-rotacion-claves-api-management-06-postman-200.png)
 
 Some design decisions:
 
 - **The cache is indexed by kid, not by "the current key".** This way, during rotation both keys coexist without conflict: each token uses its own.
-- **Cache and not KVM for the key.** The KVM is for configuration; the cache is intended for data with an expiry and does not add writes on every rotation.
+- **Cache rather than KVM for the key.** The KVM is for configuration; the cache is intended for data with an expiry and does not add writes on every rotation.
 - **Global scope.** The cache is shared across all proxies: if you have several proxies validating tokens from the same XSUAA, only one pays for downloading the JWKS.
-- **The old key in the cache is not a problem.** New tokens arrive with a different kid and do not use it; it ends up expiring on its own.
-
-One limitation worth knowing: since the cache is indexed by kid, a token with a made-up kid is never in the cache, so **every fake token triggers a call to `/token_keys`**. If the proxy is exposed to uncontrolled traffic, the result of an unknown kid can also be cached for a few minutes.
+- **The old key in the cache is not a problem.** New tokens arrive with a different kid and do not use it; it eventually expires on its own.
 
 ## How to test it
 
-1. **Cache miss:** first request with a valid token. In the proxy debug you should see `cachehit = false`, the ServiceCallout executed with 200 and **VerifyJWT** without error.
+1. **Cache miss:** first request with a valid token. In the proxy debug you should see `cachehit = false`, the ServiceCallout executed with 200 and **VerifyJWT** without errors.
 2. **Cache hit:** repeat the request. `cachehit = true` and the ServiceCallout is not executed.
 3. **Tampered kid:** build a token with a nonexistent kid. The request is rejected: with the code as it stands, the proxy returns **500** `steps.javascript.ScriptExecutionFailed` with the message "Key kid=... not found in the JWKS".
 
@@ -426,9 +424,9 @@ With the dynamic design there is nothing to touch when XSUAA rotates. Even so, i
 1. **Check `/token_keys` once a month.** If two keys appear, you are in phase 2: note the new kid.
 2. **When the new kid starts being used** (phase 3), request a token and confirm in its header that it carries the new kid.
 3. **Call a proxy with that token.** It must respond 200.
-4. **Open the proxy debug** on that first call with the new kid. You should see `cachehit = false`, the ServiceCallout to `/token_keys` with 200 and **VerifyJWT** without error. On the next call, `cachehit = true`.
-5. **If it fails**, check in this order: that the URL of **ServiceCallout_FetchJWKS** points to the correct subdomain, that the proxy can reach XSUAA (the ServiceCallout must not report a connection error) and that the token's kid appears in the JWKS.
-6. **Emergency rollback:** if the ServiceCallout cannot reach XSUAA, temporarily revert to the fixed key using the previous manual procedure while you investigate.
+4. **Open the proxy debug** on that first call with the new kid. You must see `cachehit = false`, the ServiceCallout to `/token_keys` with 200 and **VerifyJWT** without error. On the next call, `cachehit = true`.
+5. **If it fails**, check in this order: that the URL of **ServiceCallout_FetchJWKS** points to the correct subdomain, that the proxy can reach XSUAA (the ServiceCallout must not give a connection error) and that the token's kid appears in the JWKS.
+6. **Emergency rollback:** if the ServiceCallout cannot reach XSUAA, temporarily revert to the fixed key with the previous manual procedure while you investigate.
 
 ## Lessons learned
 
