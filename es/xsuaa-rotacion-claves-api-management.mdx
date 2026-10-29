@@ -2,7 +2,7 @@
 title: "SAP API Management: cuando XSUAA rota su clave de firma"
 description: "XSUAA rota su clave de firma y los proxies de SAP API Management con la clave fija en un KVM devuelven 401. Cómo diagnosticarlo y resolver la clave por kid."
 pubDate: 2026-10-29
-updatedDate: 2026-10-29
+updatedDate: 2026-10-30
 author: "Ioan Hadarau"
 tags: ["SAP API Management", "XSUAA", "JWT"]
 category: "BAIP IS"
@@ -404,8 +404,6 @@ Algunas decisiones de diseño:
 - **Caché y no KVM para la clave.** El KVM es para configuración; la caché está pensada para datos con caducidad y no añade escrituras en cada rotación.
 - **Scope Global.** La caché se comparte entre todos los proxies: si tienes varios proxies validando tokens del mismo XSUAA, solo uno paga la descarga del JWKS.
 - **La clave vieja en caché no molesta.** Los tokens nuevos llegan con otro kid y no la usan; acaba expirando sola.
-
-Un límite que conviene conocer: como la caché va indexada por kid, un token con un kid inventado nunca está en caché, así que **cada token falso provoca una llamada a `/token_keys`**. Si el proxy está expuesto a tráfico no controlado, se puede guardar también en caché, durante unos minutos, el resultado de un kid desconocido.
 
 ## Cómo probarlo
 
