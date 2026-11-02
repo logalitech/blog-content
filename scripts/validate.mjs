@@ -28,7 +28,9 @@ const IN_CI = process.env.GITHUB_ACTIONS === 'true';
 // Mismo patrón que @astrojs/markdown-remark (frontmatter.js).
 const FRONTMATTER_RE = /(?:^\uFEFF?|^\s*\n)(?:---|\+\+\+)([\s\S]*?\n)(?:---|\+\+\+)/;
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const POST_FIELDS = ['title', 'description', 'pubDate', 'updatedDate', 'author', 'tags', 'category', 'heroImage', 'draft', 'lang', 'translationKey'];
+// Título para Google: más largo, el resultado sale cortado.
+const SEO_TITLE_MAX = 60;
+const POST_FIELDS = ['title', 'seoTitle', 'description', 'pubDate', 'updatedDate', 'author', 'tags', 'category', 'heroImage', 'draft', 'lang', 'translationKey'];
 const LANDING_FIELDS = ['title', 'description', 'kicker', 'headline', 'sub', 'bullets', 'form', 'testimonials', 'cta', 'showNav', 'utmCampaign', 'draft'];
 // Componentes que la web pone a disposición del MDX (lp/[slug].astro).
 const LANDING_COMPONENTS = new Set(['Video']);
@@ -148,6 +150,9 @@ function fieldChecker(file, fm, lineOf) {
 function checkPost(file, fm, lineOf, categories) {
   const c = fieldChecker(file, fm, lineOf);
   c.string('title', { required: true });
+  c.string('seoTitle');
+  if (typeof fm.seoTitle === 'string' && fm.seoTitle.length > SEO_TITLE_MAX)
+    warning(file, lineOf('seoTitle'), `«seoTitle» tiene ${fm.seoTitle.length} caracteres y Google lo cortará`, `Déjalo en ${SEO_TITLE_MAX} caracteres como máximo.`);
   c.string('description', { required: true });
   c.date('pubDate', { required: true });
   c.date('updatedDate');
@@ -470,6 +475,34 @@ for (const [k, files] of seriesDates) {
   if (files.length > 1)
     warning(files[1], 1, `${files.join(' y ')} comparten pubDate ${date} en la serie «${cat}»: la web los ordena por translationKey`,
       'Si importa el orden de la serie, usa fechas distintas (pubDate es la fecha real de publicación).');
+}
+
+// Títulos cortos para Google de los posts publicados (seo-titles.json). La web
+// importa este fichero: si no es JSON válido, la publicación fallaría.
+if (await exists('seo-titles.json')) {
+  let titles = null;
+  try {
+    titles = JSON.parse(await readFile(join(ROOT, 'seo-titles.json'), 'utf8'));
+  } catch (e) {
+    error('seo-titles.json', 1, `seo-titles.json no es un JSON válido (${e.message})`, 'Formato: { "es/<slug>": "Título corto", "en/<slug>": "Short title" }.');
+  }
+  if (titles !== null && (typeof titles !== 'object' || Array.isArray(titles))) {
+    error('seo-titles.json', 1, 'seo-titles.json debe ser un objeto { "es/<slug>": "Título corto" }');
+  } else if (titles) {
+    for (const [id, t] of Object.entries(titles)) {
+      const m = id.match(/^(es|en)\/([^/]+)$/);
+      if (typeof t !== 'string' || !t.trim()) {
+        error('seo-titles.json', 1, `el título de «${id}» debe ser un texto no vacío`);
+        continue;
+      }
+      if (!m || published[m[1]].get(m[2]) === undefined)
+        warning('seo-titles.json', 1, `«${id}» no corresponde a ningún artículo`, 'La clave es la carpeta y el nombre del fichero sin extensión, p. ej. "es/mi-articulo".');
+      if (t.length > SEO_TITLE_MAX)
+        warning('seo-titles.json', 1, `el título de «${id}» tiene ${t.length} caracteres y Google lo cortará`, `Déjalo en ${SEO_TITLE_MAX} caracteres como máximo.`);
+      if (/[\u2013\u2014]/.test(t))
+        warning('seo-titles.json', 1, `el título de «${id}» contiene una raya`, 'Usa dos puntos, coma o paréntesis.');
+    }
+  }
 }
 
 const ok = await report(postFiles.length, landingFiles.length);
