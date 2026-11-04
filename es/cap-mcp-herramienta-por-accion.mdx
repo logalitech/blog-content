@@ -1,0 +1,243 @@
+---
+title: "SAP CAP y MCP: per_action_tool, una herramienta por acción"
+description: "Cómo publicar cada acción y función CDS de un servicio SAP CAP como herramienta MCP propia con per_action_tool y qué cambia frente a la herramienta call."
+pubDate: 2026-11-04
+author: "Roger Alex Bostan"
+tags: ["SAP CAP", "MCP", "Agentes de IA", "CDS"]
+category: "SAP CAP MCP"
+draft: false
+lang: "es"
+translationKey: "cap-mcp-herramienta-por-accion"
+---
+
+En la [segunda parte de esta serie](/blog/cap-mcp-escritura-acciones-cds/), el agente escribía en el servicio SAP CAP con la herramienta genérica `call` del plugin `@cap-js/mcp`, y la opción `per_action_tool`, que publica cada acción y cada función CDS como herramienta MCP propia, quedó fuera de alcance. Esta quinta parte prueba esa opción y la compara con `call`, sobre el mismo servicio y con una función nueva de solo lectura.
+
+Con `per_action_tool`, el esquema de cada acción llega al cliente MCP y las anotaciones distinguen la consulta de la escritura. Las pruebas mostraron estos efectos:
+
+1. **Los errores de parámetros llegan con texto.** `@mandatory` se convierte en `required` y `@assert.range` en `minimum` y `maximum`. El agente recibe «Too big: expected number to be `<=1000`» en lugar del «undefined» del modo `call`, y la llamada no llega a CAP.
+2. **La función se publica como herramienta de solo lectura.** `necesidadesReposicion` lleva `readOnlyHint: true`; con `call`, todo pasa por una única herramienta marcada como destructiva.
+3. **El esquema no lo cubre todo.** El ID del producto se publica como texto sin formato de UUID, y un nombre de producto pasa el esquema hasta que lo frena el handler.
+
+Todas las pruebas se hicieron en local el 04-11-2026, con datos inventados. Esta parte no usa SAP BTP: vuelve a la autenticación simulada de la [tercera parte](/blog/cap-mcp-autenticacion-roles/), con los usuarios `ana`, `bruno` y `carla`.
+
+## Entorno de la prueba
+
+Las versiones de las partes anteriores:
+
+| Componente | Versión |
+|---|---|
+| Node.js | 24.19.0 |
+| `@sap/cds-dk` (global) | 10.1.2 |
+| `@sap/cds` | 10.1.1 |
+| `@cap-js/mcp` | 1.5.0 |
+| `@cap-js/sqlite` | 3.1.1 |
+| Claude Code (cliente MCP) | 2.1.276 |
+
+El proyecto es el de la [cuarta parte](/blog/cap-mcp-autenticacion-xsuaa-btp/), ejecutado en local con el perfil de desarrollo: autenticación simulada (`mocked`) y SQLite en memoria. Los recursos de SAP BTP de la parte 4 se borraron el 04-11-2026.
+
+| Usuario | Roles |
+|---|---|
+| `ana` | `Lector` |
+| `bruno` | `Lector`, `Almacen` |
+| `carla` | ninguno |
+
+Las trazas y las duraciones proceden de ejecuciones de Claude Code desde la línea de comandos con el modelo `claude-sonnet-5`. Las capturas son de una segunda ejecución en la extensión de Claude Code para Visual Studio Code, con el modelo Opus 5.5 (esfuerzo «Medium») y el modo de permisos «Manual». La documentación oficial del plugin es la guía [Model Context Protocol Adapter](https://cap.cloud.sap/docs/guides/ai/cap-mcp).
+
+## Cambios respecto a la parte 4
+
+### El servicio
+
+Dos cambios en `srv/catalog-service.cds`: `@assert.range` en el parámetro `unidades` de la acción y una función nueva, `necesidadesReposicion`, que pueden usar los roles `Lector` y `Almacen`:
+
+```cds
+  @requires: 'Almacen'
+  @description: 'Registra una entrada de mercancía: suma unidades recibidas al stock de un producto. No fija el stock a un valor ni resta unidades.'
+  action registrarEntrada(
+    @mandatory @description: 'ID del producto (campo ID de Productos)'
+    producto : UUID,
+    @mandatory @assert.range: [1, 1000] @description: 'Unidades recibidas: número entero entre 1 y 1000'
+    unidades : Integer
+  ) returns Productos;
+
+  type Reposicion {
+    producto    : UUID;
+    nombre      : String;
+    stock       : Integer;
+    stockMinimo : Integer;
+    aPedir      : Integer;
+  }
+
+  @requires: ['Lector', 'Almacen']
+  @description: 'Lista los productos con stock por debajo del mínimo y las unidades que faltan para llegar a él. Solo consulta, no modifica nada.'
+  function necesidadesReposicion() returns many Reposicion;
+```
+
+El resto del servicio no cambia: las entidades, `@requires` del servicio, `@restrict` de `Productos`, `excluding { productos }` en `Categorias` y `@mcp.instructions`.
+
+### El handler
+
+En `srv/catalog-service.js` se añade la implementación de la función:
+
+```javascript
+    this.on('necesidadesReposicion', async () => {
+      const bajos = await SELECT.from(Productos)
+        .columns('ID', 'nombre', 'stock', 'stockMinimo')
+        .where('stock < stockMinimo')
+        .orderBy('nombre')
+      return bajos.map((p) => ({
+        producto: p.ID, nombre: p.nombre, stock: p.stock,
+        stockMinimo: p.stockMinimo, aPedir: p.stockMinimo - p.stock
+      }))
+    })
+```
+
+La validación propia de `registrarEntrada`, con el rango de unidades y la existencia del producto, sigue en el handler.
+
+### La opción en package.json
+
+```json
+"mcp": {
+  "autowire": false,
+  "per_action_tool": true
+}
+```
+
+Para comparar, las pruebas con `call` se hicieron con `"per_action_tool": false` o sin la clave. En adelante, **modo `call`** es el comportamiento por defecto y **modo `per_action_tool`**, el de la opción activada.
+
+Antes se probó a activarla con la variable de entorno `cds_mcp_per_action_tool=true`, y no tuvo efecto: siguió apareciendo `call`. En las variables de entorno de CAP, el guion bajo separa niveles de la configuración, y el nombre de la opción contiene guiones bajos. Por eso se configuró en `package.json`.
+
+## Las herramientas que ve cada usuario
+
+Respuesta de `tools/list` para cada usuario, con la base de datos recién cargada:
+
+| Usuario | Modo `call` | Modo `per_action_tool` |
+|---|---|---|
+| `bruno` | `describe`, `query`, `call` | `describe`, `query`, `registrarEntrada`, `necesidadesReposicion` |
+| `ana` | `describe`, `query`, `call` | `describe`, `query`, `necesidadesReposicion` |
+| `carla` | `describe`, `query` | `describe`, `query` |
+
+- **En el modo `call`, `ana` recibe ahora `call`**, que en la parte 3 no tenía, porque puede ejecutar la función. El esquema de su `call` solo admite `necesidadesReposicion`, y llamar a `registrarEntrada` a través de `call` se rechaza: «Input validation error: Invalid arguments for tool call: action: Invalid input: expected "necesidadesReposicion"».
+- **En el modo `per_action_tool`, cada usuario recibe solo las herramientas de lo que puede ejecutar.** `registrarEntrada` como `ana` devuelve «Tool registrarEntrada not found», y `call` ya no existe para nadie: «Tool call not found».
+
+## La definición de cada herramienta
+
+En el modo `per_action_tool`, `tools/list` de `bruno` publica así las dos herramientas nuevas:
+
+| | `registrarEntrada` | `necesidadesReposicion` |
+|---|---|---|
+| Parámetros | `producto` (`string`) y `unidades` (`integer`, de 1 a 1000), los dos obligatorios | Ninguno |
+| `readOnlyHint` | `false` | `true` |
+| `destructiveHint` | `true` | `false` |
+| `idempotentHint` | `false` | `true` |
+
+- **El esquema sale de las anotaciones del modelo.** `required` procede de `@mandatory`, y `minimum: 1` y `maximum: 1000`, de `@assert.range`. Cada parámetro lleva su `@description`.
+- **La descripción de la herramienta es la de `@description` más el tipo devuelto.** En la función, termina en `. Returns: Array of {producto: UUID, nombre: String, stock: Integer, stockMinimo: Integer, aPedir: Integer}`. Como las dos descripciones del modelo ya terminan en punto, el texto publicado queda con dos puntos seguidos («nada..»).
+
+En el modo `call`, la herramienta `call` tiene `readOnlyHint: false` y `destructiveHint: true` también cuando se usa para la función, y su campo `parameters` no tiene esquema (`properties: {}`): el agente descubre los parámetros con `describe`, como en la parte 2.
+
+## Errores de parámetros
+
+Llamadas directas por el protocolo MCP como `bruno`, con la base de datos recién cargada:
+
+| Llamada a `registrarEntrada` | Modo `call` | Modo `per_action_tool` |
+|---|---|---|
+| `unidades: 5000` | «Error calling registrarEntrada: undefined» | «Input validation error: Invalid arguments for tool registrarEntrada: unidades: Too big: expected number to be `<=1000`» |
+| Sin `producto` | «Error calling registrarEntrada: undefined» | «... producto: Invalid input: expected string, received undefined» |
+| `unidades: "diez"` | «Error calling registrarEntrada: `[{"target":"unidades"},{"target":"unidades"}]`» | «... unidades: Invalid input: expected number, received string» |
+| `unidades: -5` | No se repitió en esta parte | «... unidades: Too small: expected number to be `>=1`» |
+| Producto inexistente | No se repitió en esta parte | «Error calling registrarEntrada: No existe ningún producto con ID a0000000-0000-4000-8000-000000000099» |
+| `producto: "Base USB-C"` | No se probó | «Error calling registrarEntrada: No existe ningún producto con ID Base USB-C» |
+
+### En el modo call, el motivo solo está en el log
+
+En el modo `call`, los códigos de CAP solo aparecen en el log del servidor: `ASSERT_RANGE` para 5000, `ASSERT_MANDATORY` para el producto que falta, y `ASSERT_DATA_TYPE` y `ASSERT_RANGE` para «diez»:
+
+```text
+[mcp] - Executing action 'registrarEntrada' failed with:
+
+ [Error [ValidationError]] {
+  code: 'ASSERT_RANGE',
+  args: [ 5000, 1, 1000 ],
+  target: 'unidades'
+}
+```
+
+**`@assert.range` empeoró el mensaje en el modo `call`.** En la parte 2, sin esta anotación, `unidades: 5000` llegaba al handler y el agente recibía su texto: «Las unidades deben ser un número entero entre 1 y 1000». Con `@assert.range`, CAP rechaza la llamada antes del handler, y al agente le llega «undefined».
+
+### En el modo per_action_tool, el rechazo es previo a CAP
+
+En el modo `per_action_tool`, los errores de esquema los genera la validación de entrada de la herramienta MCP, antes de que la llamada llegue a CAP. Se repitieron las llamadas de 5000 unidades, sin producto, con «diez» y con un producto inexistente guardando el log del servidor: las tres primeras no aparecen en él. Solo aparece la del producto inexistente, que pasa el esquema y rechaza el handler.
+
+**El esquema no cubre todo.** `producto` es un `UUID` en el modelo, pero se publica como `type: string`, sin formato. La llamada con `producto: "Base USB-C"` pasó el esquema y la rechazó el handler, porque no existe ningún producto con ese ID.
+
+Las llamadas válidas funcionaron. La función, como `ana` y como `bruno` en el modo `call` y como `ana` en el modo `per_action_tool`, devolvió los tres productos bajo mínimos, con `aPedir` 6, 1 y 2. `registrarEntrada` como `bruno`, en el modo `per_action_tool`, dejó la Base USB-C con stock 10 y `modifiedBy: bruno`.
+
+## El agente en los dos modos
+
+Desde la línea de comandos se usó el mismo comando que en la parte 3: un fichero de configuración MCP por usuario, con `--strict-mcp-config` y el modelo `claude-sonnet-5`. En el cliente se autorizaron con `--allowedTools` las cinco herramientas posibles: `describe`, `query`, `call`, `registrarEntrada` y `necesidadesReposicion`. El servidor se reinició antes de cada pregunta, con los datos de los CSV.
+
+Cada pregunta se ejecutó una vez en cada modo indicado: las diferencias entre ejecuciones son observaciones de una sola ejecución.
+
+### bruno: reponer los productos con stock bajo
+
+«Repón todos los productos con stock bajo hasta el mínimo.»
+
+| | Modo `per_action_tool` | Modo `call` |
+|---|---|---|
+| Herramientas | `necesidadesReposicion` y tres `registrarEntrada` | `describe`, `call` con `necesidadesReposicion` y tres `call` con `registrarEntrada` |
+| Llamadas a herramientas MCP | 4 | 5 |
+| Duración | 10,4 s | 11,9 s |
+
+En los dos modos, las entradas fueron las correctas: +6 en la Base USB-C, +1 en el Portátil 16 pulgadas y +2 en el Teclado mecánico. En el modo `per_action_tool`, el agente llamó a la función por su nombre, sin `describe` ni `query`, y respondió: «Los 3 productos con stock bajo quedaron repuestos a su mínimo: Base USB-C: 0 → 6; Portátil 16 pulgadas: 3 → 4; Teclado mecánico: 8 → 10».
+
+En el modo `call`, el agente empezó por `describe` de las dos acciones para conocer sus parámetros. Lo explicó así: «There's a `necesidadesReposicion` action that likely lists low-stock items directly. Let me check its details and the registrarEntrada action params.» En la parte 2, sin la función, la misma pregunta en el modo `call` necesitó `describe`, `query` y tres `call`.
+
+### ana: consultar lo que hay que pedir
+
+«¿Qué tengo que pedir para reponer los productos con stock bajo?»
+
+En el modo `per_action_tool`, el agente solo llamó a `necesidadesReposicion` y respondió con una tabla: Base USB-C 6, Portátil 16 pulgadas 1 y Teclado mecánico 2. Tardó 7,3 s.
+
+A continuación añadió: «Para registrar las entradas cuando lleguen las unidades, se usa la acción `registrarEntrada` (es la única forma de modificar el stock). ¿Querés que la ejecute ahora para alguno de estos productos?». **`ana` no tiene esa herramienta.** `@mcp.instructions` menciona la acción a todos los usuarios, como ya se vio en la parte 3, y el agente ofreció algo que no podía hacer.
+
+### ana: una escritura sin permiso
+
+«La Base USB-C ha recibido 10 unidades. Actualiza su stock a 10.»
+
+En el modo `per_action_tool`, el agente usó `describe` y `query`, encontró la Base USB-C con stock 0 y buscó `registrarEntrada` sin encontrarla. Respondió: «las únicas herramientas del almacén que tengo disponibles son de **solo lectura** (`query` solo permite SELECT, y `necesidadesReposicion` es de consulta). No tengo acceso a una acción `registrarEntrada` para modificar el stock.» El servidor no recibió ninguna llamada a la acción. Tardó 13,5 s.
+
+## La ejecución en Visual Studio Code
+
+En la extensión de Visual Studio Code, con el modo `per_action_tool`, el usuario `bruno` y el modo de permisos «Manual», se repitió la pregunta de reposición.
+
+La primera herramienta que llamó el agente fue `necesidadesReposicion`, por su nombre y sin `describe` ni `query` antes. **Claude Code pidió permiso también para esta herramienta**, aunque el plugin la publica con `readOnlyHint: true`:
+
+![Claude Code en Visual Studio Code pide permiso para ejecutar la herramienta mcp__almacen__necesidadesReposicion, con las opciones Yes, Yes, allow for all projects y No](/images/blog/cap-mcp-herramienta-por-accion-01-permiso-funcion-solo-lectura.png)
+
+En esta ejecución, con el modo «Manual», la anotación `readOnlyHint: true` no evitó el diálogo de permiso. Desde la línea de comandos no se pudo observar, porque allí todas las herramientas estaban autorizadas con `--allowedTools`.
+
+El agente llamó después a `registrarEntrada` para los tres productos y **volvió a llamar a `necesidadesReposicion`**, que devolvió una lista vacía (`"result":[]`). Respondió con una tabla de los tres productos (Base USB-C de 0 a 6, Portátil 16 pulgadas de 3 a 4 y Teclado mecánico de 8 a 10) y cerró: «Al volver a consultar las necesidades de reposición, la lista sale vacía: ya no queda ningún producto con stock bajo.»
+
+![Claude Code en Visual Studio Code registra las entradas de los tres productos, vuelve a llamar a necesidadesReposicion, que devuelve una lista vacía, y muestra una tabla con el stock antes y después](/images/blog/cap-mcp-herramienta-por-accion-02-repone-y-verifica.png)
+
+Una consulta posterior con `query` confirmó que ningún producto quedaba por debajo del mínimo, con la Base USB-C en stock 6 y `modifiedBy: bruno`. En la ejecución de Visual Studio Code de la parte 2, el agente había dicho expresamente que no hizo una consulta final de comprobación. Es también una observación de una sola ejecución.
+
+## Límites de esta quinta parte
+
+- **Solo en local.** Autenticación simulada y SQLite en memoria; no se usó SAP BTP.
+- **Observaciones de una sola ejecución.** La comparación de pasos entre los dos modos, el permiso para la herramienta de solo lectura y la verificación final del agente se observaron una vez cada una.
+- **Permisos del cliente.** El comportamiento con `readOnlyHint: true` solo se observó en Visual Studio Code, con el modo «Manual».
+- **Fuera de alcance.** No se probaron la opción `prefix` del plugin, que añade el nombre del servicio a las herramientas, ni las acciones *bound*.
+
+## Conclusiones
+
+Con `per_action_tool`, cada acción y cada función CDS del servicio SAP CAP se publicaron como una herramienta MCP propia, con un esquema que sale de las anotaciones del modelo, y cada usuario recibió solo las herramientas de lo que su rol le permite ejecutar. Frente a la herramienta genérica `call`, las pruebas mostraron:
+
+1. Los errores de parámetros llegaron al agente con texto y sin pasar por CAP, en lugar del «undefined» del modo `call`.
+2. Las anotaciones distinguieron la función de consulta de la acción de escritura; con `call`, todo pasa por una herramienta destructiva.
+3. En el modo `call`, `@assert.range` sustituyó el mensaje del handler por «undefined».
+4. El esquema publica el UUID como texto sin formato: la existencia del producto la sigue comprobando el handler.
+5. `@mcp.instructions` sigue mencionando la acción a usuarios que no la tienen, y el agente la ofreció a `ana`.
+6. En una ejecución en Visual Studio Code con el modo «Manual», Claude Code pidió permiso también para la herramienta de solo lectura.
+
+La formación completa de CAP está en el [curso de SAP CAP de Logali Tech](/courses/sap-cap-cloud-application-programming-model/).
