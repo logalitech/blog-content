@@ -1,0 +1,243 @@
+---
+# origen: es/cap-mcp-herramienta-por-accion.mdx@c4c2ea154ed4cf371287c3ca9f0c08d3d5e54c2c (versión generada desde el artículo en español; no editar este fichero)
+title: "SAP CAP and MCP: per_action_tool, one tool per action"
+description: "How to publish each CDS action and function of a SAP CAP service as its own MCP tool with per_action_tool and what changes compared to the call tool."
+pubDate: 2026-11-04
+author: "Roger Alex Bostan"
+tags: ["SAP CAP", "MCP", "AI agents", "CDS"]
+category: "SAP CAP MCP"
+draft: false
+lang: "en"
+translationKey: "cap-mcp-herramienta-por-accion"
+---
+In the [second part of this series](/blog/cap-mcp-escritura-acciones-cds/), the agent wrote to the SAP CAP service with the generic `call` tool from the `@cap-js/mcp` plugin, and the `per_action_tool` option, which publishes each CDS action and function as its own MCP tool, was left out of scope. This fifth part tests that option and compares it with `call`, on the same service and with a new read-only function.
+
+With `per_action_tool`, the schema of each action reaches the MCP client and the annotations distinguish the query from the write. The tests showed these effects:
+
+1. **Parameter errors arrive with text.** `@mandatory` becomes `required` and `@assert.range` becomes `minimum` and `maximum`. The agent receives "Too big: expected number to be `<=1000`" instead of the "undefined" from `call` mode, and the call never reaches CAP.
+2. **The function is published as a read-only tool.** `necesidadesReposicion` carries `readOnlyHint: true`; with `call`, everything goes through a single tool marked as destructive.
+3. **The schema does not cover everything.** The product ID is published as plain text instead of a UUID, and a product name passes the schema until the handler stops it.
+
+All tests were run locally on 04-11-2026, with invented data. This part does not use SAP BTP: it returns to the simulated authentication from the [third part](/en/blog/sap-cap-mcp-authentication-roles/), with the users `ana`, `bruno` and `carla`.
+
+## Test environment
+
+The versions of the parts from the previous sections:
+
+| Component | Version |
+|---|---|
+| Node.js | 24.19.0 |
+| `@sap/cds-dk` (global) | 10.1.2 |
+| `@sap/cds` | 10.1.1 |
+| `@cap-js/mcp` | 1.5.0 |
+| `@cap-js/sqlite` | 3.1.1 |
+| Claude Code (MCP client) | 2.1.276 |
+
+The project is the one from [part four](/en/blog/sap-cap-mcp-sap-btp-xsuaa-authentication/), run locally with the development profile: mocked authentication (`mocked`) and in-memory SQLite. The SAP BTP resources from part 4 were deleted on 04-11-2026.
+
+| User | Roles |
+|---|---|
+| `ana` | `Lector` |
+| `bruno` | `Lector`, `Almacen` |
+| `carla` | none |
+
+The traces and durations come from Claude Code runs from the command line with the `claude-sonnet-5` model. The screenshots are from a second run in the Claude Code extension for Visual Studio Code, with the Opus 5.5 model ("Medium" effort) and the "Manual" permission mode. The plugin's official documentation is the [Model Context Protocol Adapter](https://cap.cloud.sap/docs/guides/ai/cap-mcp) guide.
+
+## Changes compared with part 4
+
+### The service
+
+Two changes in `srv/catalog-service.cds`: `@assert.range` on the `unidades` parameter of the action and a new function, `necesidadesReposicion`, which the `Lector` and `Almacen` roles can use:
+
+```cds
+  @requires: 'Almacen'
+  @description: 'Registra una entrada de mercancía: suma unidades recibidas al stock de un producto. No fija el stock a un valor ni resta unidades.'
+  action registrarEntrada(
+    @mandatory @description: 'ID del producto (campo ID de Productos)'
+    producto : UUID,
+    @mandatory @assert.range: [1, 1000] @description: 'Unidades recibidas: número entero entre 1 y 1000'
+    unidades : Integer
+  ) returns Productos;
+
+  type Reposicion {
+    producto    : UUID;
+    nombre      : String;
+    stock       : Integer;
+    stockMinimo : Integer;
+    aPedir      : Integer;
+  }
+
+  @requires: ['Lector', 'Almacen']
+  @description: 'Lista los productos con stock por debajo del mínimo y las unidades que faltan para llegar a él. Solo consulta, no modifica nada.'
+  function necesidadesReposicion() returns many Reposicion;
+```
+
+The rest of the service does not change: the entities, the service's `@requires`, the `@restrict` on `Productos`, `excluding { productos }` in `Categorias` and `@mcp.instructions`.
+
+### The handler
+
+In `srv/catalog-service.js` the implementation of the function is added:
+
+```javascript
+    this.on('necesidadesReposicion', async () => {
+      const bajos = await SELECT.from(Productos)
+        .columns('ID', 'nombre', 'stock', 'stockMinimo')
+        .where('stock < stockMinimo')
+        .orderBy('nombre')
+      return bajos.map((p) => ({
+        producto: p.ID, nombre: p.nombre, stock: p.stock,
+        stockMinimo: p.stockMinimo, aPedir: p.stockMinimo - p.stock
+      }))
+    })
+```
+
+The validation specific to `registrarEntrada`, with the range of units and the existence of the product, remains in the handler.
+
+### The option in package.json
+
+```json
+"mcp": {
+  "autowire": false,
+  "per_action_tool": true
+}
+```
+
+For comparison, the tests with `call` were run with `"per_action_tool": false` or without the key. From now on, **`call` mode** is the default behavior and **`per_action_tool` mode** is the one with the option enabled.
+
+Previously, enabling it with the environment variable `cds_mcp_per_action_tool=true` was tried, and it had no effect: `call` still appeared. In CAP environment variables, the underscore separates configuration levels, and the option name contains underscores. That is why it was configured in `package.json`.
+
+## The tools each user sees
+
+`tools/list` response for each user, with the database freshly loaded:
+
+| User | `call` mode | `per_action_tool` mode |
+|---|---|---|
+| `bruno` | `describe`, `query`, `call` | `describe`, `query`, `registrarEntrada`, `necesidadesReposicion` |
+| `ana` | `describe`, `query`, `call` | `describe`, `query`, `necesidadesReposicion` |
+| `carla` | `describe`, `query` | `describe`, `query` |
+
+- **In `call` mode, `ana` now receives `call`**, which she did not have in part 3, because she can execute the function. Her `call` schema only accepts `necesidadesReposicion`, and calling `registrarEntrada` through `call` is rejected: "Input validation error: Invalid arguments for tool call: action: Invalid input: expected "necesidadesReposicion"".
+- **In `per_action_tool` mode, each user receives only the tools for what they can execute.** `registrarEntrada` as `ana` returns "Tool registrarEntrada not found", and `call` no longer exists for anyone: "Tool call not found".
+
+## The definition of each tool
+
+In `per_action_tool` mode, `tools/list` of `bruno` publishes the two new tools as follows:
+
+| | `registrarEntrada` | `necesidadesReposicion` |
+|---|---|---|
+| Parameters | `producto` (`string`) and `unidades` (`integer`, from 1 to 1000), both mandatory | None |
+| `readOnlyHint` | `false` | `true` |
+| `destructiveHint` | `true` | `false` |
+| `idempotentHint` | `false` | `true` |
+
+- **The schema comes from the model's annotations.** `required` comes from `@mandatory`, and `minimum: 1` and `maximum: 1000`, from `@assert.range`. Each parameter carries its `@description`.
+- **The tool description is the one from `@description` plus the return type.** In the function, it ends with `. Returns: Array of {producto: UUID, nombre: String, stock: Integer, stockMinimo: Integer, aPedir: Integer}`. Since both model descriptions already end with a period, the published text ends up with two periods in a row ("nada..").
+
+In `call` mode, the `call` tool has `readOnlyHint: false` and `destructiveHint: true` also when it is used for the function, and its `parameters` field has no schema (`properties: {}`): the agent discovers the parameters with `describe`, as in part 2.
+
+## Parameter errors
+
+Direct calls through the MCP protocol such as `bruno`, with the database freshly loaded:
+
+| Call to `registrarEntrada` | `call` mode | `per_action_tool` mode |
+|---|---|---|
+| `unidades: 5000` | "Error calling registrarEntrada: undefined" | "Input validation error: Invalid arguments for tool registrarEntrada: unidades: Too big: expected number to be `<=1000`" |
+| Without `producto` | "Error calling registrarEntrada: undefined" | "... producto: Invalid input: expected string, received undefined" |
+| `unidades: "diez"` | "Error calling registrarEntrada: `[{"target":"unidades"},{"target":"unidades"}]`" | "... unidades: Invalid input: expected number, received string" |
+| `unidades: -5` | Not repeated in this part | "... unidades: Too small: expected number to be `>=1`" |
+| Nonexistent product | Not repeated in this part | "Error calling registrarEntrada: No existe ningún producto con ID a0000000-0000-4000-8000-000000000099" |
+| `producto: "Base USB-C"` | Not tested | "Error calling registrarEntrada: No existe ningún producto con ID Base USB-C" |
+
+### In call mode, the reason is only in the log
+
+In `call` mode, CAP codes only appear in the server log: `ASSERT_RANGE` for 5000, `ASSERT_MANDATORY` for the missing product, and `ASSERT_DATA_TYPE` and `ASSERT_RANGE` for "diez":
+
+```text
+[mcp] - Executing action 'registrarEntrada' failed with:
+
+ [Error [ValidationError]] {
+  code: 'ASSERT_RANGE',
+  args: [ 5000, 1, 1000 ],
+  target: 'unidades'
+}
+```
+
+**`@assert.range` made the message worse in `call` mode.** In part 2, without this annotation, `unidades: 5000` reached the handler and the agent received its text: "Las unidades deben ser un número entero entre 1 y 1000". With `@assert.range`, CAP rejects the call before the handler, and the agent receives "undefined".
+
+### In per_action_tool mode, the rejection happens before CAP
+
+In `per_action_tool` mode, schema errors are generated by the MCP tool's input validation, before the call reaches CAP. The calls with 5000 units, without a product, with "diez" and with a nonexistent product were repeated while saving the server log: the first three do not appear in it. Only the one for the nonexistent product appears, which passes the schema and is rejected by the handler.
+
+**The schema does not cover everything.** `producto` is a `UUID` in the model, but it is published as `type: string`, without a format. The call with `producto: "Base USB-C"` passed the schema and was rejected by the handler, because no product exists with that ID.
+
+The valid calls worked. The function, as `ana` and as `bruno` in `call` mode and as `ana` in `per_action_tool` mode, returned the three products below minimum, with `aPedir` 6, 1 and 2. `registrarEntrada` as `bruno`, in `per_action_tool` mode, left Base USB-C with stock 10 and `modifiedBy: bruno`.
+
+## The agent in both modes
+
+From the command line, the same command as in part 3 was used: an MCP configuration file per user, with `--strict-mcp-config` and the `claude-sonnet-5` model. In the client, the five possible tools were authorized with `--allowedTools`: `describe`, `query`, `call`, `registrarEntrada` and `necesidadesReposicion`. The server was restarted before each question, with the data from the CSV files.
+
+Each question was run once in each indicated mode: the differences between runs are observations from a single run.
+
+### bruno: restock the products with low stock
+
+"Restock all products with low stock up to the minimum."
+
+| | `per_action_tool` mode | `call` mode |
+|---|---|---|
+| Tools | `necesidadesReposicion` and three `registrarEntrada` | `describe`, `call` with `necesidadesReposicion` and three `call` with `registrarEntrada` |
+| MCP tool calls | 4 | 5 |
+| Duration | 10.4 s | 11.9 s |
+
+In both modes, the entries were correct: +6 for the USB-C Base, +1 for the 16-inch Laptop and +2 for the Mechanical Keyboard. In `per_action_tool` mode, the agent called the function by its name, without `describe` or `query`, and answered: "All 3 products with low stock were restocked to their minimum: USB-C Base: 0 → 6; 16-inch Laptop: 3 → 4; Mechanical Keyboard: 8 → 10".
+
+In `call` mode, the agent started with `describe` for both actions to learn their parameters. It explained it like this: "There's a `necesidadesReposicion` action that likely lists low-stock items directly. Let me check its details and the registrarEntrada action params." In part 2, without the function, the same question in `call` mode required `describe`, `query` and three `call`.
+
+### ana: check what needs to be ordered
+
+"What do I need to order to restock the products with low stock?"
+
+In `per_action_tool` mode, the agent only called `necesidadesReposicion` and answered with a table: USB-C Base 6, 16-inch Laptop 1 and Mechanical Keyboard 2. It took 7.3 s.
+
+It then added: "To record the entries when the units arrive, the `registrarEntrada` action is used (it is the only way to modify stock). Do you want me to run it now for any of these products?". **`ana` does not have that tool.** `@mcp.instructions` mentions the action to all users, as already seen in part 3, and the agent offered something it could not do.
+
+### ana: a write without permission
+
+"The USB-C Base has received 10 units. Update its stock to 10."
+
+In `per_action_tool` mode, the agent used `describe` and `query`, found the USB-C Base with stock 0 and looked for `registrarEntrada` without finding it. It answered: "the only warehouse tools I have available are **read-only** (`query` only allows SELECT, and `necesidadesReposicion` is for queries). I do not have access to a `registrarEntrada` action to modify stock." The server received no call to the action. It took 13.5 s.
+
+## Execution in Visual Studio Code
+
+In the Visual Studio Code extension, with the `per_action_tool` mode, the user `bruno` and the "Manual" permission mode, the replenishment question was repeated.
+
+The first tool the agent called was `necesidadesReposicion`, by name and without `describe` or `query` beforehand. **Claude Code also asked for permission for this tool**, even though the plugin publishes it with `readOnlyHint: true`:
+
+![Claude Code in Visual Studio Code asks for permission to run the mcp__almacen__necesidadesReposicion tool, with the options Yes, Yes, allow for all projects and No](/images/blog/cap-mcp-herramienta-por-accion-01-permiso-funcion-solo-lectura.png)
+
+In this run, with "Manual" mode, the `readOnlyHint: true` annotation did not prevent the permission dialog. From the command line this could not be observed, because there all tools were authorized with `--allowedTools`.
+
+The agent then called `registrarEntrada` for the three products and **called `necesidadesReposicion` again**, which returned an empty list (`"result":[]`). It responded with a table of the three products (USB-C Base from 0 to 6, 16-inch Laptop from 3 to 4 and Mechanical Keyboard from 8 to 10) and closed with: "When querying the replenishment needs again, the list comes back empty: there are no longer any products with low stock."
+
+![Claude Code in Visual Studio Code registers the entries for the three products, calls necesidadesReposicion again, which returns an empty list, and shows a table with the stock before and after](/images/blog/cap-mcp-herramienta-por-accion-02-repone-y-verifica.png)
+
+A later query with `query` confirmed that no product was below the minimum, with the USB-C Base at stock 6 and `modifiedBy: bruno`. In the Visual Studio Code run in part 2, the agent had expressly said that it did not do a final verification query. This is also an observation from a single run.
+
+## Limits of this fifth part
+
+- **Local only.** Simulated authentication and in-memory SQLite; SAP BTP was not used.
+- **Single-run observations.** The step comparison between the two modes, the permission for the read-only tool and the final agent verification were each observed once.
+- **Client permissions.** The behavior with `readOnlyHint: true` was only observed in Visual Studio Code, with the "Manual" mode.
+- **Out of scope.** The plugin's `prefix` option, which adds the service name to the tools, and *bound* actions were not tested.
+
+## Conclusions
+
+With `per_action_tool`, each action and each CDS function of the SAP CAP service was published as its own MCP tool, with a schema derived from the model annotations, and each user received only the tools for what their role allows them to execute. Compared with the generic `call` tool, the tests showed:
+
+1. Parameter errors reached the agent as text and without going through CAP, instead of the "undefined" of `call` mode.
+2. The annotations distinguished the query function from the write action; with `call`, everything goes through a destructive tool.
+3. In `call` mode, `@assert.range` replaced the handler's message with "undefined".
+4. The schema publishes the UUID as plain text: the handler still checks that the product exists.
+5. `@mcp.instructions` still mentions the action to users who do not have it, and the agent offered it to `ana`.
+6. In a run in Visual Studio Code with "Manual" mode, Claude Code also asked for permission for the read-only tool.
+
+The full CAP training is in the [SAP CAP course from Logali Tech](/courses/sap-cap-cloud-application-programming-model/).
