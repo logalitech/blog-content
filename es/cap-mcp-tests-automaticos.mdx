@@ -1,0 +1,240 @@
+---
+title: "SAP CAP y MCP: tests automáticos del servidor con cds.test"
+description: "Cómo fijar en 14 tests con @cap-js/cds-test las correcciones del servidor MCP de un servicio SAP CAP y comprobar que cada regresión hace fallar alguno."
+pubDate: 2026-11-13
+author: "Roger Alex Bostan"
+tags: ["SAP CAP", "MCP", "Tests automáticos", "Node.js"]
+category: "SAP CAP MCP"
+draft: false
+lang: "es"
+translationKey: "cap-mcp-tests-automaticos"
+---
+
+Las partes 2 a 5 de esta serie encontraron problemas en el servidor MCP del servicio SAP CAP y los corrigieron con una anotación o una opción de configuración: `@mandatory` en la [segunda parte](/blog/cap-mcp-escritura-acciones-cds/), los roles, los usuarios simulados cerrados y `excluding { productos }` en la [tercera](/blog/cap-mcp-autenticacion-roles/), y `per_action_tool` en la [quinta](/blog/cap-mcp-herramienta-por-accion/). Esta sexta parte fija esas correcciones en tests automáticos sobre el endpoint MCP, para que una modificación posterior no las deshaga sin que nadie lo note.
+
+Los tests prueban el servidor MCP, no el agente: comprueban qué herramientas ofrece el servidor a cada usuario, qué rechaza y con qué mensaje. En esta parte no se ejecuta ningún agente. Los resultados:
+
+1. **Las correcciones de la serie caben en 14 tests** que se ejecutan en menos de 4 segundos, sin arrancar el servidor aparte: `cds.test` lo levanta y lo para.
+2. **Cada corrección quitada hizo fallar al menos un test.** Al quitar `@mandatory`, el test detectó el mismo fallo silencioso de la parte 2.
+3. **Dos detalles de montaje:** el cliente HTTP de `cds.test` necesita `responseType: 'text'` para leer las respuestas MCP, y `node --test` en Node.js 24 necesita un patrón de ficheros, no un directorio.
+
+Todas las pruebas se hicieron en local el 13-11-2026, sobre el mismo proyecto de las partes anteriores, con datos y usuarios inventados.
+
+## Entorno de la prueba
+
+Las versiones de las partes anteriores, más el paquete de tests:
+
+| Componente | Versión |
+|---|---|
+| Node.js | 24.19.0 |
+| `@sap/cds-dk` (global) | 10.1.2 |
+| `@sap/cds` | 10.1.1 |
+| `@cap-js/mcp` | 1.5.0 |
+| `@cap-js/sqlite` | 3.1.1 |
+| `@cap-js/cds-test` | 1.0.2 (de SAP, licencia Apache 2.0) |
+| Ejecutor de tests | El integrado en Node.js (`node --test`) |
+
+El servicio y el handler son los de la quinta parte, con `per_action_tool: true`, ejecutados con el perfil de desarrollo: autenticación simulada (`mocked`) con los usuarios `ana`, `bruno` y `carla`, y SQLite en memoria.
+
+| Usuario | Roles |
+|---|---|
+| `ana` | `Lector` |
+| `bruno` | `Lector`, `Almacen` |
+| `carla` | ninguno |
+
+La documentación oficial de `cds.test` está en [Testing with cds.test](https://cap.cloud.sap/docs/node.js/cds-test), y la del plugin, en la guía [Model Context Protocol Adapter](https://cap.cloud.sap/docs/guides/ai/cap-mcp).
+
+## Montar los tests
+
+El paquete se instala como dependencia de desarrollo:
+
+```bash
+npm i -D @cap-js/cds-test
+```
+
+En `package.json`, el script de tests:
+
+```json
+"scripts": {
+  "test": "node --test \"test/**/*.test.js\""
+}
+```
+
+El README de `@cap-js/cds-test` 1.0.2 propone Vitest o Jest, y dice que `node --test` y `mocha` «are supported, too, though with less coverage in real-life projects». Se usó `node --test` para no añadir más dependencias.
+
+### Primer tropiezo: node --test con un directorio
+
+Con un directorio como argumento, `node --test test/` falla en Node.js 24:
+
+```text
+Error: Cannot find module 'C:\temp\articulos\cap-mcp\test'
+ℹ tests 1
+ℹ fail 1
+```
+
+Hay que pasar un patrón de ficheros, como en el script anterior: `node --test "test/**/*.test.js"`.
+
+### Segundo tropiezo: el cuerpo de las respuestas MCP llega vacío
+
+El servidor MCP responde con `Content-Type: text/event-stream`. Para ese tipo, el cliente HTTP de `cds.test` devuelve el cuerpo como flujo, sin leerlo. Así lo decide su fichero `lib/naxios.js`:
+
+```javascript
+if (/stream|image|pdf|tar/.test(ct)) return res.body
+```
+
+Los tests recibían un objeto vacío, y en la primera ejecución completa **fallaron 12 de los 14**. Solo pasaron los dos de autenticación, que comprueban el código de estado y no el cuerpo. Se resuelve pidiendo el cuerpo como texto con `responseType: 'text'` en la petición.
+
+## El fichero de tests
+
+Los tests están en `test/mcp.test.js`. El principio del fichero arranca el servidor y define una función auxiliar que envía una petición JSON-RPC al endpoint MCP como un usuario dado:
+
+```javascript
+const cds = require('@sap/cds')
+const { describe, it, beforeEach } = require('node:test')
+
+const test = cds.test(__dirname + '/..')
+const { POST, expect } = test
+
+// Usuarios simulados de package.json (perfil de desarrollo)
+const PASSWORDS = { ana: 'demo-ana', bruno: 'demo-bruno', carla: 'demo-carla' }
+const BASE_USB_C = 'a0000000-0000-4000-8000-000000000005'
+
+// Envía una petición JSON-RPC al servidor MCP y devuelve { status, body }
+let id = 0
+async function mcp (user, method, params) {
+  // El servidor MCP responde con text/event-stream: se pide el cuerpo como texto
+  const config = { headers: { Accept: 'application/json, text/event-stream' }, responseType: 'text' }
+  if (user) config.auth = { username: user, password: PASSWORDS[user] ?? 'cualquiera' }
+  try {
+    const res = await POST('/mcp/catalog', { jsonrpc: '2.0', id: ++id, method, params }, config)
+    const data = String(res.data).split('\n').find((l) => l.startsWith('data: '))
+    return { status: res.status, body: data ? JSON.parse(data.slice(6)) : res.data }
+  } catch (err) {
+    return { status: err.status ?? err.response?.status, body: err.response?.data }
+  }
+}
+
+const toolNames = async (user) => (await mcp(user, 'tools/list')).body.result.tools.map((t) => t.name).sort()
+const callTool = (user, name, args = {}) => mcp(user, 'tools/call', { name, arguments: args })
+const textOf = (res) => res.body.result?.content?.[0]?.text ?? res.body.error?.message
+```
+
+`cds.test` arranca el servidor CAP con el modelo y los datos de los CSV en una base de datos SQLite en memoria. Las contraseñas son las de los usuarios simulados de `package.json`, del perfil de desarrollo; un usuario que no está en la lista recibe una contraseña cualquiera. La respuesta MCP llega como evento (`data: ...`), y la función extrae de ella el JSON.
+
+Antes de cada test, `test.data.reset()` vuelve a cargar los datos, así que la escritura de un test no afecta a los demás:
+
+```javascript
+describe('Servidor MCP del almacén', () => {
+  beforeEach(() => test.data.reset())
+```
+
+Dos ejemplos de los tests. El primero fija la corrección de la asociación de la parte 3: `carla` no puede llegar a `Productos` a través de `Categorias`. El segundo comprueba la escritura de `bruno` y que queda como autor del cambio:
+
+```javascript
+    it('carla no puede llegar a Productos a través de Categorias', async () => {
+      const res = await callTool('carla', 'query', { cql: 'SELECT nombre, productos.stock as stock FROM Categorias' })
+      expect(res.body.result.isError).to.equal(true)
+      expect(textOf(res)).to.match(/"productos" not found/)
+    })
+```
+
+```javascript
+    it('bruno registra una entrada y queda como autor del cambio', async () => {
+      const res = await callTool('bruno', 'registrarEntrada', { producto: BASE_USB_C, unidades: 10 })
+      const { result } = res.body.result.structuredContent
+      expect(result.stock).to.equal(10)
+      expect(result.modifiedBy).to.equal('bruno')
+    })
+```
+
+## Los 14 tests y lo que protegen
+
+Los tests se agrupan en cinco bloques `describe`. Cada uno protege una corrección o un comportamiento de una parte anterior de la serie:
+
+| Test | Qué protege (parte) |
+|---|---|
+| **Autenticación** | |
+| Rechaza las peticiones sin credenciales (401) | `@requires: 'authenticated-user'` (3) |
+| Rechaza a un usuario que no existe, `zoe` (401) | `"*": false` y usuarios por defecto cerrados (3) |
+| **Herramientas según el rol** | |
+| `bruno` recibe `describe`, `necesidadesReposicion`, `query` y `registrarEntrada` | Roles y `per_action_tool` (3 y 5) |
+| `ana` recibe la función, pero no la acción | `@requires: 'Almacen'` en la acción (3) |
+| `carla` solo recibe `describe` y `query` | Roles (3) |
+| La función es de solo lectura y la acción, destructiva | Anotaciones de `per_action_tool` (5) |
+| **Acceso a los productos** | |
+| `carla` no puede leer `Productos` («cannot be resolved») | `@restrict` en `Productos` (3) |
+| `carla` no llega a `Productos` a través de `Categorias` («"productos" not found») | `excluding { productos }` (3) |
+| **Validación de `registrarEntrada`** | |
+| Más de 1000 unidades: «Too big: expected number to be `<=1000`» | `@assert.range` y `per_action_tool` (5) |
+| Sin producto: «producto: Invalid input» | `@mandatory` (2) |
+| Producto que no existe: «No existe ningún producto con ID Base USB-C» | Validación del handler (2 y 5) |
+| **Escritura y consulta** | |
+| `bruno` registra 10 unidades: stock 10 y `modifiedBy: bruno` | Acción y usuario real (2 y 3) |
+| `ana` no puede registrar: «Tool registrarEntrada not found» | Roles (3) |
+| `necesidadesReposicion` devuelve Base USB-C 6, Portátil 16 pulgadas 1 y Teclado mecánico 2 | Función (5) |
+
+## Resultado con el proyecto de la parte 5
+
+Con el proyecto tal como quedó al cerrar la quinta parte, `npm test` dio **14 tests, 14 correctos y 0 fallos**. La ejecución completa duró 3,77 s según el `duration_ms` del ejecutor, sin ningún servidor arrancado aparte.
+
+![Terminal de Visual Studio Code con la salida de npm test: los 14 tests en verde, agrupados en Autenticación, Herramientas según el rol, Acceso a los productos, Validación de registrarEntrada y Escritura y consulta, con tests 14, suites 6, pass 14 y fail 0](/images/blog/cap-mcp-tests-automaticos-01-npm-test-14-correctos.png)
+
+## Cada corrección, quitada a propósito
+
+Para comprobar que los tests detectan una regresión, se quitó cada corrección por separado, se ejecutaron los tests y se restauró el proyecto. Al final se comprobó byte a byte que el proyecto había quedado como antes.
+
+| Prueba | Cambio | Resultado |
+|---|---|---|
+| R1 | Sin `excluding { productos }` en `Categorias` | 13 correctos, 1 fallo |
+| R2 | Sin `"*": false` ni los usuarios por defecto a `false` | 13 correctos, 1 fallo |
+| R3 | Sin `@mandatory` en `producto` | 13 correctos, 1 fallo |
+| R4 | Sin `@requires: 'Almacen'` en la acción | 11 correctos, 3 fallos |
+| R5 | `per_action_tool: false` (modo `call`) | 6 correctos, 8 fallos |
+
+Después de restaurar, los tests volvieron a dar 14 de 14 correctos, en 3,65 s.
+
+### R1: la asociación vuelve a abrirse
+
+Sin `excluding { productos }`, falla «carla no puede llegar a Productos a través de Categorias»: la consulta ya no da error y la aserción recibe `expected undefined to equal true`.
+
+![Terminal de Visual Studio Code con la salida de npm test tras quitar excluding productos de Categorias: falla carla no puede llegar a Productos a través de Categorias, con pass 13, fail 1 y duration_ms 3695.044](/images/blog/cap-mcp-tests-automaticos-02-regresion-detectada.png)
+
+La salida indica el test y su línea en el fichero (`test at test\mcp.test.js:70:5`).
+
+### R2: un usuario inventado vuelve a entrar
+
+Sin `"*": false` ni los usuarios por defecto a `false`, falla «rechaza a un usuario que no existe»: `zoe` recibe una respuesta correcta, `expected 200 to equal 401`.
+
+### R3: vuelve el fallo silencioso de la parte 2
+
+Sin `@mandatory` en `producto`, falla «rechaza la llamada sin producto». La llamada sin producto no dio error: devolvió un resultado de la acción con el Portátil 14 pulgadas, con stock 12 y sin cambios. Es el mismo fallo silencioso de la [segunda parte](/blog/cap-mcp-escritura-acciones-cds/): una llamada que parece correcta y no modifica nada.
+
+### R4: carla también recibe la acción
+
+Sin `@requires: 'Almacen'` en la acción, fallan tres tests: «ana recibe la función, pero no la acción», «ana no puede registrar entradas» y «carla solo recibe describe y query». `ana` y `carla` reciben `registrarEntrada`, y `ana` registró una entrada que dejó `modifiedBy: ana`.
+
+Este caso muestra algo que no se había visto en la parte 3: **sin `@requires` en la acción, también `carla`, que no tiene ningún rol, recibe `registrarEntrada`**, porque el servicio solo exige `authenticated-user`.
+
+### R5: el modo call
+
+Con `per_action_tool: false`, fallan ocho tests: los que comprueban las herramientas por su nombre, las anotaciones, los errores con texto y las llamadas a `registrarEntrada` y `necesidadesReposicion`. `bruno` y `ana` reciben `call`, `describe` y `query`, y las llamadas a `registrarEntrada` devuelven «Tool registrarEntrada not found».
+
+«ana no puede registrar entradas» siguió en verde en R5, pero por otro motivo: en el modo `call` la herramienta `registrarEntrada` no existe para nadie, y también `bruno` recibió «Tool registrarEntrada not found». Los tests de herramientas por nombre son los que detectan el cambio de modo.
+
+## Límites de esta sexta parte
+
+- **Los tests prueban el servidor, no el agente.** Comprueban lo que el servidor MCP ofrece y rechaza a cada usuario. El comportamiento del agente de las partes 1 a 5 no se puede fijar así, porque cambia entre ejecuciones.
+- **Solo en local.** Autenticación simulada y SQLite en memoria; no se probó contra la aplicación desplegada en SAP BTP con XSUAA de la [cuarta parte](/blog/cap-mcp-autenticacion-xsuaa-btp/).
+- **Fuera de alcance.** No se usaron Vitest ni Jest, no se configuró integración continua (ejecutar los tests en cada cambio) y no hay tests del agente.
+
+## Conclusiones
+
+Las correcciones de las partes 2 a 5 quedaron fijadas en 14 tests sobre el endpoint MCP, que `cds.test` ejecuta en menos de 4 segundos con su propio servidor y los datos de prueba restaurados antes de cada test. Las pruebas mostraron:
+
+1. Cada corrección quitada hizo fallar al menos un test, y el fallo indica qué comportamiento se ha perdido.
+2. Sin `@mandatory`, el test detectó el mismo fallo silencioso de la parte 2: una llamada sin producto que no da error y no cambia nada.
+3. Sin `@requires` en la acción, también un usuario sin roles recibe la herramienta de escritura, porque el servicio solo exige `authenticated-user`.
+4. El cliente de `cds.test` necesita `responseType: 'text'` para el protocolo MCP, porque trata `text/event-stream` como flujo.
+5. Con `node --test` en Node.js 24 hay que pasar un patrón de ficheros, no un directorio.
+
+La formación completa de CAP está en el [curso de SAP CAP de Logali Tech](/courses/sap-cap-cloud-application-programming-model/).
