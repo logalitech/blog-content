@@ -1,0 +1,143 @@
+---
+title: "SAP BTP CI/CD: del push a producción con un único gate humano"
+description: "Del push a producción con SAP CI/CD y Cloud Transport Management: webhook, stages del job, colas de cTMS y el import del Release Operator como único gate."
+pubDate: 2026-11-20
+author: "Grecia Rodriguez"
+tags: ["SAP BTP", "CI/CD", "Cloud Transport Management", "Cloud Foundry", "Fiori"]
+category: "BAIP CI/CD"
+draft: false
+lang: "es"
+translationKey: "flujo-commit-produccion-sap-cicd-ctms"
+---
+
+En muchos equipos, entregar una aplicación Fiori sigue siendo una cadena de pasos manuales: alguien compila en su máquina, alguien genera un fichero, alguien lo sube a un sistema y alguien más lo transporta. Cada paso depende de una persona, y de ahí salen los tres problemas habituales: errores, falta de trazabilidad y dependencia de quien sabe hacer el despliegue.
+
+Este artículo recorre el flujo completo de un pipeline Fiori en SAP BTP, desde el push al repositorio hasta la aplicación en producción, con SAP Continuous Integration and Delivery y SAP Cloud Transport Management (cTMS). El hilo conductor es una decisión de diseño: el pipeline entrega el artefacto, pero la llegada a producción la autoriza siempre una persona.
+
+## El flujo en una imagen
+
+<figure>
+  <img src="/images/blog/flujo-commit-produccion-sap-cicd-ctms-01-flujo-commit-produccion.png" alt="Flujo del commit a producción: Developer, Azure Repos, job de SAP CI/CD con Build, Acceptance y Release, Cloud Transport Management, Cloud Foundry de desarrollo y de producción, y Release Operator" />
+  <figcaption>Del push a main hasta producción, con el Release Operator como única intervención humana.</figcaption>
+</figure>
+
+Las piezas, de izquierda a derecha:
+
+- **Repositorio Git (Azure Repos).** Un push a la rama `main` es el evento que lo inicia todo.
+- **Job de SAP CI/CD** con el pipeline Cloud Foundry Environment 3.0. Construye, despliega a desarrollo y sube el artefacto.
+- **Cloud Foundry de desarrollo.** Recibe el despliegue automático de la stage Acceptance.
+- **Cloud Transport Management.** Recibe el artefacto en la cola del nodo de desarrollo y lo lleva al nodo de producción.
+- **Release Operator.** La persona que importa a producción.
+
+El pipeline es un consumidor de transportes, no un gestor: no decide cuándo algo llega a producción.
+
+## Repositorio y ramas: qué dispara el pipeline
+
+La estrategia de ramas es deliberadamente simple:
+
+- `dev` es el trabajo en curso. No tiene políticas ni dispara el pipeline.
+- `main` es la rama que dispara el pipeline. Admite push directo y los pull requests son opcionales.
+
+La decisión sorprende, porque no hay revisiones obligatorias en Git. La razón es que ya existe un control humano hacia producción, el import en cTMS, y duplicarlo en Git añadiría fricción sobre un control que ya está cubierto. Se asumen tres costes de forma explícita: la historia de `main` puede ser menos limpia, no hay una segunda revisión automática antes del despliegue a desarrollo y los conflictos se resuelven a mano. En un proyecto regulatorio o crítico, o cuando el equipo madure en Git, las políticas de rama se activan por repositorio.
+
+## Webhook: cómo un push se convierte en un build
+
+El receptor del webhook vive en el **Repository** del servicio de CI/CD, no en el job. Al registrar el Repository con el tipo Azure Repos, el servicio genera en la sección Webhook Data la URL, el evento y el usuario que hay que usar en Azure.
+
+<figure>
+  <img src="/images/blog/flujo-commit-produccion-sap-cicd-ctms-02-webhook-data-repository.png" alt="Webhook Data de un Repository en SAP CI/CD: evento Code pushed, URL del webhook oculta, usuario TOKEN y contraseña con el secreto de la credencial webhook-azure" />
+  <figcaption>Webhook Data del Repository. La URL se ha ocultado.</figcaption>
+</figure>
+
+Con esos datos se crea el Service Hook en Azure DevOps:
+
+- Evento **Code pushed**, repositorio del proyecto y rama `main`.
+- La rama se escribe como nombre simple. Con `refs/heads/main` el hook nunca dispara.
+- En la acción, la URL de Webhook Data **del propio Repository**, el usuario `TOKEN` escrito literalmente y como contraseña el secreto de la credencial del webhook.
+- El botón Test debe responder 200. Un 401 o un 403 indica que el secreto no coincide entre Azure y CI/CD.
+
+<figure>
+  <img src="/images/blog/flujo-commit-produccion-sap-cicd-ctms-03-service-hook-trigger.png" alt="Asistente de Azure DevOps para crear un Service Hook: evento Code pushed, repositorio repo-fiori y rama main" />
+  <figcaption>Disparador del Service Hook: repositorio del proyecto y rama main.</figcaption>
+</figure>
+
+El build se lanza cuando se cumplen tres condiciones a la vez: llega un webhook al Repository, el Repository está en estado On y hay un job activo en esa rama. El job de Cloud Foundry no tiene pestaña de disparadores, porque el trigger es implícito.
+
+Dos detalles que ahorran tiempo de diagnóstico:
+
+- Un 200 en la entrega de Azure no garantiza que haya build. Si el hook apunta a la URL del Repository de otro proyecto, Azure ve un 200, el servicio recibe el evento, no encuentra ningún job suscrito y lo descarta sin dejar rastro. Cada Service Hook usa la URL de su propio Repository.
+- El push inicial de un repositorio nunca dispara el hook, porque el hook se crea después. El primer push de validación es el primer disparo real.
+
+## El job y sus stages
+
+Un job de tipo Cloud Foundry Environment 3.0 tiene una secuencia fija de stages: Init, Build, Additional Unit Tests, Malware Scan, Acceptance, Compliance, Release y Declarative: Post Actions. En este flujo se configuran tres, y el resto quedan en estado Skipped hasta que se necesiten:
+
+| Stage | Qué hace | Configuración |
+|---|---|---|
+| Build | Ejecuta `mbt build` y genera el `.mtar` | Herramienta `mta` y descriptor `mta.yaml` |
+| Acceptance | Despliega a Cloud Foundry de desarrollo con `cf deploy` | API Endpoint, organización, espacio y credencial de despliegue |
+| Release | Sube el `.mtar` a cTMS | Operación Upload to el nodo de desarrollo y credencial `ctms-service-key` |
+
+<figure>
+  <img src="/images/blog/flujo-commit-produccion-sap-cicd-ctms-04-stage-acceptance-cf.png" alt="Configuración de la stage Acceptance del job: Deploy to Cloud Foundry Space con API Endpoint y organización ocultos, espacio space-dev-lgt, estrategia default y credencial cf-dev-deployer" />
+  <figcaption>Stage Acceptance: el despliegue a desarrollo usa una credencial técnica. Endpoint y organización ocultos.</figcaption>
+</figure>
+
+La credencial de despliegue merece atención. Debe ser una cuenta técnica que acepte usuario y contraseña: una cuenta humana con autenticación multifactor o inicio de sesión único no funciona, y si esa persona deja la empresa, los pipelines fallan en cadena. Lleva solo el rol Space Developer, y solo en el espacio de desarrollo.
+
+El servicio de CI/CD es Jenkins con Project Piper ofrecido como servicio. En cada build se levantan contenedores con las imágenes de Piper y se ejecutan sus steps, por ejemplo `cloudFoundryDeploy`. Saber qué step falla lleva directamente a su documentación.
+
+<figure>
+  <img src="/images/blog/flujo-commit-produccion-sap-cicd-ctms-05-build-lanzado-por-push.png" alt="Detalle del job repo-fiori en SAP CI/CD con el build número 1 en ejecución, lanzado por un commit" />
+  <figcaption>Primer build del job, lanzado por el push a main.</figcaption>
+</figure>
+
+El primer despliegue puede tardar hasta tres minutos, y el build completo hasta diez en una aplicación pequeña. Depende del tamaño de la aplicación.
+
+## Cloud Transport Management: nodos, rutas y colas
+
+cTMS es la torre de control del landscape. El pipeline sube el artefacto al nodo de desarrollo y nada más. A partir de ahí manda el modelo que se define en cTMS:
+
+- **Nodos de transporte.** Uno por entorno. En el caso de referencia se llaman `NODE_DEV` y `NODE_PRO`. Solo el nodo de desarrollo tiene activado Allow Upload to Node, porque es donde el pipeline sube el artefacto. El tipo de contenido es Multi-Target Application y cada nodo apunta a un destino de despliegue.
+- **Rutas.** Una ruta define el camino entre dos nodos. Con dos entornos hay una sola, de `NODE_DEV` a `NODE_PRO`. Con tres, dos rutas.
+- **Forward Mode.** Define cuándo se reenvía una solicitud al siguiente nodo. Hay cuatro opciones: preimportación (el valor por defecto), postimportación, en caso de éxito y manual. En el ejemplo de formación se usa en caso de éxito.
+- **Colas de importación.** Cada nodo tiene una. Lo que llega por una ruta se ve en la cola del nodo destino, esperando a que alguien lo importe.
+
+Los roles de la aplicación se reparten por función. El Release Operator necesita poder importar y el equipo de desarrollo suele necesitar menos. El destino de producción usa además un usuario distinto del de desarrollo: si se filtran las credenciales de desarrollo, producción no se ve afectada.
+
+Hay un comportamiento que conviene conocer: **cada upload crea una entrada nueva en la cola**, nunca sobrescribe la anterior, ni siquiera con la misma versión del MTA. La descripción de la entrada es el hash corto del commit más el mensaje del último commit. De ahí salen dos prácticas: escribir mensajes de fusión significativos, por ejemplo con `git merge dev -m "mensaje"`, y subir la versión semántica en cada release que vaya a producción.
+
+## El único gate humano: el import del Release Operator
+
+En el flujo, la stage Acceptance despliega a desarrollo y la stage Release sube el artefacto a la cola de `NODE_DEV`. El pipeline no importa a producción. Esa acción corresponde al Release Operator, desde la interfaz de cTMS, y es el único control manual del recorrido.
+
+El procedimiento de cada release es corto. El Release Operator abre la cola, comprueba que la entrada es la que se ha notificado y la importa. Tras el import, cTMS despliega el `.mtar` en el espacio de Cloud Foundry del destino, igual que haría un `cf deploy`.
+
+Este diseño tiene tres consecuencias prácticas:
+
+- **Trazabilidad.** Cada transporte queda registrado con su historial, y la descripción de la entrada identifica el commit exacto que se promociona.
+- **Separación de funciones.** Quien puede importar a producción es el Release Operator, y el equipo de desarrollo suele necesitar menos permisos.
+- **Un solo punto de aprobación.** Al no repetir el control en Git, el equipo no arrastra ceremonia que no va a adoptar.
+
+La integración continua y la entrega continua no implican desplegar a producción de forma automática. En este flujo, la entrega continua llega hasta la cola de cTMS.
+
+## ¿Qué comprobar tras un push?
+
+Un pipeline en verde no es una aplicación funcionando. Las comprobaciones de extremo a extremo son:
+
+1. En Azure, el historial del Service Hook muestra el evento Code pushed con estado 200.
+2. El job arranca solo en unos segundos y termina con Acceptance y Release en verde. Los stages opcionales aparecen como Skipped.
+3. En Cloud Foundry de desarrollo, `cf services` muestra las instancias del proyecto.
+4. En cTMS, el `.mtar` aparece en el nodo de desarrollo con la descripción esperada.
+5. Tras el import, la aplicación está en el espacio de destino y **se abre en el navegador**.
+
+La última comprobación es obligatoria. En el proyecto de referencia hubo despliegues correctos con la página en blanco, y una de las causas fue un renombrado incompleto de los identificadores de la aplicación.
+
+## Límites del modelo
+
+- Los stages de pruebas unitarias adicionales, Malware Scan y Compliance no están configurados en este flujo: permanecen en Skipped hasta que un proyecto los necesite.
+- La notificación de builds fallidos no está activada por defecto. Para producción se activa con SAP Alert Notification y una lista de distribución.
+- Sin branch policies, un cambio erróneo en `main` llega a desarrollo antes de que alguien lo revise. Es un coste asumido, y la protección de producción es el import manual.
+- Un build en verde no sustituye a la comprobación visual de la aplicación.
+
+El modelo funciona porque cada pieza hace una sola cosa: Git avisa, el servicio de CI/CD construye y despliega a desarrollo, cTMS guarda y transporta, y una persona decide cuándo llega a producción.
