@@ -1,0 +1,52 @@
+---
+# traducción: autor (versión escrita por el autor; el flujo de traducción automática no la sustituye)
+title: "What an SAP MDK app can change without a store release"
+description: "An SAP MDK app is updated either with a deploy to SAP Mobile Services or with a store release. What reaches users each way, and why the first release matters."
+pubDate: 2026-11-21
+author: "Abel Burduhos"
+tags: ["SAP MDK", "SAP Mobile Services", "App Update"]
+category: "SAP Mobile Services"
+draft: false
+lang: "en"
+translationKey: "sap-mdk-cambios-sin-publicar-en-tienda"
+---
+
+There are two ways to get a new version of a mobile app to the users.
+
+The usual one is a store release. You build a new version of the app, upload it to the App Store and Google Play, and wait for Apple and Google to review it. Then every user still has to install the update, and anyone with automatic updates turned off keeps the old version until they do it themselves. Even a one line app fix goes through all of that.
+
+An MDK app has a second, much faster way: a deploy. You upload the new version to SAP Mobile Services, and the app on every phone downloads it by itself, usually the next time it is opened. In SAP's words, an update goes out **"with a few clicks, without going through the code-signing process"**.
+
+The catch is that a deploy cannot change everything.
+
+## Two ways to update
+
+An MDK app is made of two parts. The first is the app people install from the store, which SAP calls the MDK client. It holds the native code: the engine that draws the screens, the permissions the phone asks the user for, the app's name and icon, and the MDK version it was built with. The second part is the metadata: the pages, actions and rules that make up your own app. The client is the engine, and the metadata is what it runs.
+
+A deploy replaces the metadata.
+
+On iOS, both parts show up in the app's page in Settings.
+
+![Two parts of the iOS Settings page of an MDK app: on the left the access it has, on the right its Application Version 1.1.0, its Definitions Version 1.0.10 and the version of SAP's MDK framework](/images/blog/sap-mdk-cambios-sin-publicar-en-tienda-01-ajustes-ios-versiones.png)
+
+The Definitions Version belongs to the metadata, so a deploy can change it. The Application Version, the MDK framework version and the access list on the left belong to the client, and only a store release changes them.
+
+## What goes where
+
+| Change                                                                           | How it reaches users |
+| -------------------------------------------------------------------------------- | -------------------- |
+| Pages, actions, rules, texts, styles, images                                     | a deploy             |
+| A custom control (an extension) in the MDK project                               | a deploy             |
+| A rule using a phone feature the app already has, such as the camera             | a deploy             |
+| Extra native code: a NativeScript plugin, an iOS framework or an Android library | a store release      |
+| A new permission, such as Bluetooth                                              | a store release      |
+| The app's name, icon or splash screen                                            | a store release      |
+| A newer version of the MDK client                                                | a store release      |
+
+## Get the first release right
+
+This is where the real advantage of MDK lies. The client is built once, and if that first release already has every permission, plugin and library the app is likely to need, almost everything after it is a deploy. New screens, fixed rules, new texts and translations reach every user without a store review and without anyone updating the app, as often as you need.
+
+A store release is then needed only now and then: for a new permission, a new plugin, or to move to a newer MDK version.
+
+Get the client right once, and everything after it is a deploy.
