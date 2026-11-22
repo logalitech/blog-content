@@ -2,6 +2,7 @@
 title: "Qué puede cambiar una app SAP MDK sin pasar por la tienda"
 description: "Una app SAP MDK se actualiza con un despliegue en SAP Mobile Services o publicando en la tienda. Qué llega por cada camino y por qué importa la primera versión."
 pubDate: 2026-11-21
+updatedDate: 2026-11-22
 author: "Abel Burduhos"
 tags: ["SAP MDK", "SAP Mobile Services", "App Update"]
 category: "SAP Mobile Services"
@@ -14,7 +15,7 @@ Hay dos formas de hacer llegar una nueva versión de una app móvil a sus usuari
 
 La habitual es publicarla en la tienda. Generas una nueva versión de la app, la subes a App Store y Google Play y esperas a que Apple y Google la revisen. Después, cada usuario todavía tiene que instalar la actualización, y quien tenga desactivadas las actualizaciones automáticas se queda con la versión anterior hasta que la instale por su cuenta. Hasta el arreglo de una sola línea pasa por todo eso.
 
-Una app MDK tiene una segunda forma, mucho más rápida: el despliegue. Subes la nueva versión a SAP Mobile Services y la app de cada teléfono la descarga sola, normalmente la próxima vez que se abre. En palabras de SAP, una actualización se despliega **«con unos pocos clics, sin pasar por el proceso de firma de código»**.
+Una app MDK tiene una segunda forma, mucho más rápida: el despliegue. Subes la nueva versión a SAP Mobile Services y la app de cada teléfono la descarga sola, normalmente la próxima vez que se abre o vuelve a primer plano, salvo que la app esté configurada para preguntar antes al usuario. En palabras de SAP, una actualización se despliega **«con unos pocos clics, sin pasar por el proceso de firma de código»**.
 
 El inconveniente es que un despliegue no puede cambiarlo todo.
 
@@ -28,7 +29,7 @@ En iOS, las dos partes aparecen en la página de la app dentro de Ajustes.
 
 ![Dos partes de la página de Ajustes de iOS de una app MDK: a la izquierda, los accesos que tiene; a la derecha, su Application Version 1.1.0, su Definitions Version 1.0.10 y la versión del framework MDK de SAP](/images/blog/sap-mdk-cambios-sin-publicar-en-tienda-01-ajustes-ios-versiones.png)
 
-La Definitions Version pertenece a los metadatos, así que un despliegue puede cambiarla. La Application Version, la versión del framework MDK y la lista de accesos de la izquierda pertenecen al cliente, y solo una publicación en la tienda las cambia.
+La Definitions Version pertenece a los metadatos, así que un despliegue puede cambiarla. La Application Version, la versión del framework MDK y los accesos que la app puede pedir, a la izquierda, pertenecen al cliente, y solo una publicación en la tienda los cambia.
 
 ## Qué va por cada camino
 
@@ -42,10 +43,16 @@ La Definitions Version pertenece a los metadatos, así que un despliegue puede c
 | El nombre, el icono o la pantalla de carga de la app | una publicación en la tienda |
 | Una versión más reciente del cliente MDK | una publicación en la tienda |
 
+## No solo SAP
+
+Si esto te suena, es porque la misma separación es habitual en el desarrollo móvil, donde se conoce como actualización over-the-air (OTA). En React Native, el servicio de actualizaciones de Expo envía JavaScript, estilos e imágenes nuevos directamente a los teléfonos, mientras que el código nativo, los permisos y una versión más reciente del SDK de Expo siguen necesitando una publicación en la tienda. En Flutter, Shorebird hace lo mismo con el código Dart, aunque las imágenes y las fuentes, el código nativo y una versión más reciente de Flutter siguen pasando por la tienda.
+
+En los tres casos, la versión publicada en la tienda decide qué pueden hacer las actualizaciones. La diferencia es que en MDK viene de serie: desplegar en SAP Mobile Services es la forma habitual de hacer llegar un cambio.
+
 ## Acierta con la primera versión
 
-Aquí está la verdadera ventaja de MDK. El cliente se construye una vez y, si esa primera versión ya incluye todos los permisos, plugins y bibliotecas que la app probablemente necesitará, casi todo lo que venga después será un despliegue. Pantallas nuevas, reglas corregidas, textos nuevos y traducciones llegan a todos los usuarios sin revisión de la tienda y sin que nadie tenga que actualizar la app, tantas veces como lo necesites.
+Aquí está la verdadera ventaja de MDK. El cliente se construye una vez y, si esa primera versión ya incluye los permisos, plugins y bibliotecas previstos para la app, casi todo lo que venga después será un despliegue. Pantallas nuevas, reglas corregidas, textos nuevos y traducciones llegan a todos los usuarios sin revisión de la tienda y sin que nadie tenga que actualizar la app, tantas veces como lo necesites.
 
-A partir de ahí, solo hace falta publicar en la tienda de vez en cuando: para un permiso nuevo, un plugin nuevo o para pasar a una versión más reciente de MDK.
+Aun así, de vez en cuando hace falta publicar en la tienda: para un permiso nuevo, un plugin nuevo o una versión más reciente de MDK.
 
-Acierta con el cliente una vez y todo lo que venga después será un despliegue.
+Acierta con el cliente y casi todo lo que venga después será un despliegue.

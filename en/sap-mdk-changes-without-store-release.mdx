@@ -3,6 +3,7 @@
 title: "What an SAP MDK app can change without a store release"
 description: "An SAP MDK app is updated either with a deploy to SAP Mobile Services or with a store release. What reaches users each way, and why the first release matters."
 pubDate: 2026-11-21
+updatedDate: 2026-11-22
 author: "Abel Burduhos"
 tags: ["SAP MDK", "SAP Mobile Services", "App Update"]
 category: "SAP Mobile Services"
@@ -15,7 +16,7 @@ There are two ways to get a new version of a mobile app to the users.
 
 The usual one is a store release. You build a new version of the app, upload it to the App Store and Google Play, and wait for Apple and Google to review it. Then every user still has to install the update, and anyone with automatic updates turned off keeps the old version until they do it themselves. Even a one line app fix goes through all of that.
 
-An MDK app has a second, much faster way: a deploy. You upload the new version to SAP Mobile Services, and the app on every phone downloads it by itself, usually the next time it is opened. In SAP's words, an update goes out **"with a few clicks, without going through the code-signing process"**.
+An MDK app has a second, much faster way: a deploy. You upload the new version to SAP Mobile Services, and the app on each phone downloads it by itself, usually the next time it is opened or brought back to the screen, unless the app is set up to ask the user first. In SAP's words, an update goes out **"with a few clicks, without going through the code-signing process"**.
 
 The catch is that a deploy cannot change everything.
 
@@ -29,7 +30,7 @@ On iOS, both parts show up in the app's page in Settings.
 
 ![Two parts of the iOS Settings page of an MDK app: on the left the access it has, on the right its Application Version 1.1.0, its Definitions Version 1.0.10 and the version of SAP's MDK framework](/images/blog/sap-mdk-cambios-sin-publicar-en-tienda-01-ajustes-ios-versiones.png)
 
-The Definitions Version belongs to the metadata, so a deploy can change it. The Application Version, the MDK framework version and the access list on the left belong to the client, and only a store release changes them.
+The Definitions Version belongs to the metadata, so a deploy can change it. The Application Version, the MDK framework version and which accesses the app can ask for, on the left, belong to the client, and only a store release changes them.
 
 ## What goes where
 
@@ -43,10 +44,16 @@ The Definitions Version belongs to the metadata, so a deploy can change it. The 
 | The app's name, icon or splash screen                                            | a store release      |
 | A newer version of the MDK client                                                | a store release      |
 
+## Not only SAP
+
+If this sounds familiar, it is because the same split is common in mobile development, where it is called an over-the-air update. In React Native, Expo's update service sends new JavaScript, styling and images straight to the phones, while native code, permissions and a newer Expo SDK still need a store release. In Flutter, Shorebird does the same for Dart code, although images and fonts, native code and a newer Flutter version still go through the store.
+
+In all three, the version in the store decides what the updates can do. The difference is that in MDK this comes built in: deploying to SAP Mobile Services is the normal way to ship a change.
+
 ## Get the first release right
 
-This is where the real advantage of MDK lies. The client is built once, and if that first release already has every permission, plugin and library the app is likely to need, almost everything after it is a deploy. New screens, fixed rules, new texts and translations reach every user without a store review and without anyone updating the app, as often as you need.
+This is where the real advantage of MDK lies. The client is built once, and if that first release already has the permissions, plugins and libraries the app is planned to use, almost everything after it is a deploy. New screens, fixed rules, new texts and translations reach every user without a store review and without anyone updating the app, as often as you need.
 
-A store release is then needed only now and then: for a new permission, a new plugin, or to move to a newer MDK version.
+A store release is still needed from time to time: for a new permission, a new plugin, or a newer MDK version.
 
-Get the client right once, and everything after it is a deploy.
+Get the client right, and most of what comes after it is a deploy.
