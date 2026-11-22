@@ -18,6 +18,8 @@ The usual one is a store release. You build a new version of the app, upload it 
 
 An MDK app has a second, much faster way: a deploy. You upload the new version to SAP Mobile Services, and the app on each phone downloads it by itself, usually the next time it is opened or brought back to the screen, unless the app is set up to ask the user first. In SAP's words, an update goes out **"with a few clicks, without going through the code-signing process"**.
 
+A phone that is offline gets the new version once it connects again, and if the new version fails to load, the client goes back to the previous one.
+
 The catch is that a deploy cannot change everything.
 
 ## Two ways to update
@@ -44,6 +46,8 @@ The Definitions Version belongs to the metadata, so a deploy can change it. The 
 | The app's name, icon or splash screen                                            | a store release      |
 | A newer version of the MDK client                                                | a store release      |
 
+A store release here means a new build of the client. In a company it can also go out through device management (MDM) instead of the public stores.
+
 ## Not only SAP
 
 If this sounds familiar, it is because the same split is common in mobile development, where it is called an over-the-air update. In React Native, Expo's update service sends new JavaScript, styling and images straight to the phones, while native code, permissions and a newer Expo SDK still need a store release. In Flutter, Shorebird does the same for Dart code, although images and fonts, native code and a newer Flutter version still go through the store.
@@ -52,7 +56,7 @@ In all three, the version in the store decides what the updates can do. The diff
 
 ## Get the first release right
 
-This is where the real advantage of MDK lies. The client is built once, and if that first release already has the permissions, plugins and libraries the app is planned to use, almost everything after it is a deploy. New screens, fixed rules, new texts and translations reach every user without a store review and without anyone updating the app, as often as you need.
+The client is built once. If that first release already has the permissions, plugins and libraries the app is planned to use, almost everything after it is a deploy. New screens, fixed rules, new texts and translations reach every user without a store review and without anyone updating the app, as often as you need.
 
 A store release is still needed from time to time: for a new permission, a new plugin, or a newer MDK version.
 
